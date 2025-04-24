@@ -1,8 +1,7 @@
 services:
   - type: web
     name: mindscape
-    env: python
-    python_version: 3.9.7
+    runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
     envVars:
@@ -10,11 +9,8 @@ services:
         value: app.py
       - key: FLASK_ENV
         value: production
-      - key: PYTHONUNBUFFERED
-        value: "true"
-      - key: WEB_CONCURRENCY
-        value: "2"
-      - key: POETRY_VERSION
-        value: ""
-    healthCheckPath: /
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.9.7
     autoDeploy: false 
