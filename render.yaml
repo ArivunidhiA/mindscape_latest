@@ -3,35 +3,18 @@ services:
     name: mindscape
     env: python
     python_version: 3.9.7
-    buildCommand: |
-      # Install system dependencies
-      apt-get update
-      apt-get install -y python3-dev build-essential libpq-dev
-      
-      # Create and activate virtual environment
-      python -m venv venv
-      . venv/bin/activate
-      
-      # Upgrade pip and install build tools
-      python -m pip install --upgrade pip
-      pip install wheel setuptools
-      
-      # Install Python packages
-      pip install -r requirements.txt
-      
-      # Verify gunicorn installation
-      which gunicorn || echo "gunicorn not found"
-    startCommand: |
-      . venv/bin/activate
-      gunicorn --bind 0.0.0.0:$PORT wsgi:app
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
     envVars:
       - key: FLASK_APP
-        value: wsgi.py
+        value: app.py
       - key: FLASK_ENV
         value: production
       - key: PYTHONUNBUFFERED
         value: "true"
       - key: WEB_CONCURRENCY
         value: "2"
+      - key: POETRY_VERSION
+        value: ""
     healthCheckPath: /
     autoDeploy: false 
