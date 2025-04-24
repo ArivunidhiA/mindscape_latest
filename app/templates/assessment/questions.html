@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}{{ assessment_info.name }} - Mindscape{% endblock %}
+
+{% block content %}
+<div class="min-h-screen py-12 bg-gray-900">
+    <div class="container mx-auto px-6">
+        <div class="max-w-4xl mx-auto">
+            <div class="glass-card p-8 rounded-lg shadow-xl bg-gray-800 bg-opacity-50">
+                <h1 class="text-3xl font-bold mb-8">
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
+                        {{ assessment_info.name }}
+                    </span>
+                </h1>
+
+                <form method="POST" action="{{ url_for('assessment.submit_assessment', assessment_type=assessment_type) }}" class="space-y-8">
+                    {{ form.csrf_token }}
+                    
+                    {% for question in questions %}
+                    <div class="question-container bg-gray-800 bg-opacity-50 rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                        <h3 class="text-xl font-semibold mb-4 text-white">{{ question.text }}</h3>
+                        <p class="text-sm text-gray-400 mb-4">Category: {{ question.category|replace('_', ' ')|title }}</p>
+                        <div class="space-y-4">
+                            {% for i in range(1, assessment_info.max_score + 1) %}
+                            <div class="flex items-center hover:bg-gray-700 p-2 rounded-lg transition-colors duration-200">
+                                <input type="radio" 
+                                       id="q{{ question.id }}_{{ i }}" 
+                                       name="question_{{ question.id }}" 
+                                       value="{{ i }}"
+                                       class="form-radio h-4 w-4 text-purple-500 focus:ring-purple-500 focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800"
+                                       required>
+                                <label for="q{{ question.id }}_{{ i }}" class="ml-3 text-gray-300 hover:text-white cursor-pointer">
+                                    {{ question.get_scale_label(i) }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    <div class="flex justify-between mt-8">
+                        <a href="{{ url_for('assessment.take_assessment') }}" 
+                           class="btn-secondary bg-gray-700 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors duration-200">
+                            Back
+                        </a>
+                        <button type="submit" 
+                                class="btn-primary bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-2 rounded-lg transition-colors duration-200">
+                            Submit Assessment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

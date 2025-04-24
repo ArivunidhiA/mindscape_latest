@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-8">
+    <h2 class="text-3xl font-bold text-center mb-6">{{ assessment.name }}</h2>
+    <p class="text-gray-600 mb-8 text-center">{{ assessment.description }}</p>
+    
+    <form method="POST" class="space-y-8">
+        {% for question in assessment.questions %}
+        <div class="space-y-4">
+            <p class="text-lg font-semibold">{{ question.text }}</p>
+            <div class="flex flex-wrap gap-4 justify-center sm:justify-between">
+                {% for option in question.options %}
+                <div class="option-wrapper">
+                    <input type="radio" 
+                           id="{{ question.id }}_{{ loop.index }}" 
+                           name="{{ question.id }}" 
+                           value="{{ loop.index }}" 
+                           class="hidden" required>
+                    <label for="{{ question.id }}_{{ loop.index }}"
+                           class="block px-4 py-2 rounded-lg border-2 border-gray-300 cursor-pointer
+                                  transition-all duration-200 ease-in-out
+                                  hover:shadow-md hover:-translate-y-0.5
+                                  peer-checked:border-blue-500 peer-checked:bg-blue-50 
+                                  peer-checked:shadow-lg peer-checked:-translate-y-1">
+                        {{ option }}
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+        
+        <div class="flex justify-center mt-8">
+            <button type="submit" 
+                    class="bg-blue-800 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded
+                           transition-all duration-200 ease-in-out hover:shadow-md hover:-translate-y-0.5">
+                Submit Assessment
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+    .option-wrapper input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+    }
+    
+    .option-wrapper input[type="radio"] + label {
+        min-width: 100px;
+        text-align: center;
+    }
+    
+    @media (max-width: 640px) {
+        .option-wrapper {
+            flex: 1 1 calc(50% - 1rem);
+        }
+        
+        .option-wrapper label {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %} 

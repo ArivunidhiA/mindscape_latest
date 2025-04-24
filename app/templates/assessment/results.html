@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}{{ assessment_info.name }} Results - Mindscape{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen py-12 bg-gray-900">
+    <div class="container mx-auto px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="glass-card p-8 rounded-lg shadow-xl bg-gray-800 bg-opacity-50">
+                <div class="flex justify-between items-start mb-8">
+                    <h1 class="text-3xl font-bold">
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
+                            {{ assessment_info.name }} Results
+                        </span>
+                    </h1>
+                    <button onclick="downloadResults()" 
+                            class="btn-primary bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-2 rounded-lg transition-colors duration-200 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                        Download Results
+                    </button>
+                </div>
+
+                <div class="mb-8">
+                    <p class="text-gray-300">Completed on: {{ assessment.completed_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                </div>
+
+                <!-- Chart Container -->
+                <div class="aspect-w-16 aspect-h-9 mb-8">
+                    <canvas id="resultChart" class="w-full h-full"></canvas>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+                    {% for category, score in category_scores.items() %}
+                    <div class="glass-card p-6 rounded-lg bg-gray-800 bg-opacity-50">
+                        <h3 class="text-xl font-semibold mb-2 text-white">{{ category|replace('_', ' ')|title }}</h3>
+                        <div class="flex items-end space-x-2">
+                            <span class="text-4xl font-bold text-purple-500">{{ "%.1f"|format(score) }}</span>
+                            <span class="text-gray-400">/ {{ assessment_info.max_score }}.0</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="flex justify-center mt-8">
+                <a href="{{ url_for('assessment.take_assessment') }}" 
+                   class="btn-secondary bg-gray-700 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors duration-200">
+                    Back to Assessments
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Fetch results data and create chart
+    fetch('{{ url_for("assessment.api_results", assessment_id=assessment.id) }}')
+        .then(response => response.json())
+        .then(data => {
+            createChart(data);
+        });
+});
+
+function createChart(data) {
+    const ctx = document.getElementById('resultChart').getContext('2d');
+    const chartConfig = getChartConfig(data);
+    new Chart(ctx, chartConfig);
+}
+
+function getChartConfig(data) {
+    const configs = {
+        'radar': {
+            type: 'radar',
+            data: {
+                labels: data.categories.map(c => c.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())),
+                datasets: [{
+                    label: 'Your Score',
+                    data: data.scores,
+                    backgroundColor: 'rgba(147, 51, 234, 0.2)',
+                    borderColor: 'rgba(147, 51, 234, 1)',
+                    pointBackgroundColor: 'rgba(147, 51, 234, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(147, 51, 234, 1)'
+                }]
+            },
+            options: {
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: data.max_score,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        },
+        'circumplex': {
+            type: 'polarArea',
+            data: {
+                labels: data.categories.map(c => c.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())),
+                datasets: [{
+                    data: data.scores,
+                    backgroundColor: data.categories.map((_, i) => `hsla(${(i * 360 / data.categories.length)}, 70%, 60%, 0.6)`)
+                }]
+            },
+            options: {
+                scales: {
+                    r: {
+                        max: data.max_score,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        },
+        'pentagon': {
+            type: 'radar',
+            data: {
+                labels: data.categories.map(c => c.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())),
+                datasets: [{
+                    label: 'Your Score',
+                    data: data.scores,
+                    backgroundColor: 'rgba(147, 51, 234, 0.2)',
+                    borderColor: 'rgba(147, 51, 234, 1)',
+                    pointBackgroundColor: 'rgba(147, 51, 234, 1)',
+                    pointBorderColor: '#fff'
+                }]
+            },
+            options: {
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: data.max_score,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        },
+        'polar': {
+            type: 'polarArea',
+            data: {
+                labels: data.categories.map(c => c.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())),
+                datasets: [{
+                    data: data.scores,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.6)',
+                        'rgba(54, 162, 235, 0.6)',
+                        'rgba(255, 206, 86, 0.6)',
+                        'rgba(75, 192, 192, 0.6)'
+                    ]
+                }]
+            },
+            options: {
+                scales: {
+                    r: {
+                        max: data.max_score,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    return configs[data.type];
+}
+
+async function downloadResults() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Add title
+    doc.setFontSize(20);
+    doc.text("{{ assessment_info.name }} Results", 20, 20);
+    
+    // Add user info
+    doc.setFontSize(12);
+    doc.text("Name: {{ current_user.name }}", 20, 40);
+    doc.text("Age: {{ current_user.age }}", 20, 50);
+    doc.text("Date: {{ assessment.completed_at.strftime('%B %d, %Y at %I:%M %p') }}", 20, 60);
+    
+    // Add chart
+    const canvas = document.getElementById('resultChart');
+    const chartImage = canvas.toDataURL('image/png');
+    doc.addImage(chartImage, 'PNG', 20, 80, 170, 100);
+    
+    // Add scores
+    let y = 190;
+    doc.text("Category Scores:", 20, y);
+    y += 10;
+    {% for category, score in category_scores.items() %}
+    doc.text("{{ category|replace('_', ' ')|title }}: {{ "%.1f"|format(score) }}/{{ assessment_info.max_score }}.0", 20, y);
+    y += 10;
+    {% endfor %}
+    
+    // Save the PDF
+    doc.save('{{ assessment_info.name|replace(" ", "_") }}_Results.pdf');
+}
+</script>
+{% endblock %} 

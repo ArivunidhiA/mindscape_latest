@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Select Assessment - Mindscape{% endblock %}
+
+{% block content %}
+<div class="min-h-screen py-12 bg-gray-900">
+    <div class="container mx-auto px-6">
+        <div class="max-w-6xl mx-auto">
+            <h1 class="text-4xl font-bold mb-8 text-center">
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
+                    Available Assessments
+                </span>
+            </h1>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+                {% for assessment_key, assessment in assessments.items() %}
+                <div class="glass-card p-6 rounded-lg shadow-xl bg-gray-800 bg-opacity-50 hover:transform hover:scale-105 transition-all duration-300">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="text-2xl font-semibold text-white">{{ assessment.name }}</h3>
+                        <span class="text-sm text-gray-400">~{{ assessment.duration }} mins</span>
+                    </div>
+                    <p class="text-gray-300 mb-6">{{ assessment.description }}</p>
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        {% for category in assessment.categories %}
+                        <span class="px-3 py-1 rounded-full text-xs bg-purple-500 bg-opacity-20 text-purple-300">
+                            {{ category|replace('_', ' ')|title }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                    <div class="flex justify-end">
+                        <a href="{{ url_for('assessment.assessment_type', assessment_type=assessment_key) }}" 
+                           class="btn-primary bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-2 rounded-lg transition-colors duration-200">
+                            Take Assessment
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="mt-12 text-center">
+                <p class="text-gray-400">
+                    Each assessment provides unique insights into different aspects of your personal and professional development.
+                    <br>Choose the assessment that aligns with your current goals.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add hover effect to assessment cards
+    const cards = document.querySelectorAll('.glass-card');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.classList.add('shadow-2xl');
+            this.style.transform = 'translateY(-5px)';
+        });
+        card.addEventListener('mouseleave', function() {
+            this.classList.remove('shadow-2xl');
+            this.style.transform = 'translateY(0)';
+        });
+    });
+});
+</script>
+{% endblock %} 

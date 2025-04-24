@@ -1,0 +1,36 @@
+[
+    {
+        "id": "lsi",
+        "name": "Life Styles Inventory",
+        "description": "Evaluate thinking patterns and behavioral styles that impact leadership effectiveness.",
+        "questions": [
+            {
+                "id": "q1",
+                "text": "I support and encourage others in their development",
+                "options": ["Never", "Rarely", "Sometimes", "Often", "Always"]
+            },
+            {
+                "id": "q2",
+                "text": "I help others find meaning in their work",
+                "options": ["Never", "Rarely", "Sometimes", "Often", "Always"]
+            }
+        ]
+    },
+    {
+        "id": "oci",
+        "name": "Organizational Culture Inventory",
+        "description": "Assess preferred organizational culture styles and alignment.",
+        "questions": [
+            {
+                "id": "q1",
+                "text": "I prefer clear performance metrics",
+                "options": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]
+            },
+            {
+                "id": "q2",
+                "text": "I focus on achieving measurable results",
+                "options": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]
+            }
+        ]
+    }
+] 

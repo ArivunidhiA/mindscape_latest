@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Mindscape{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="glass-card w-full max-w-md p-8">
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-bold">
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
+                    Create Account
+                </span>
+            </h2>
+            <p class="mt-2 text-sm text-gray-400">
+                Join us on your personal growth journey
+            </p>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.register') }}" class="space-y-6">
+            {{ form.hidden_tag() }}
+            
+            <div class="space-y-2">
+                {{ form.username.label(class="block text-sm font-medium") }}
+                {{ form.username(class="form-input") }}
+                {% for error in form.username.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <div class="space-y-2">
+                {{ form.email.label(class="block text-sm font-medium") }}
+                {{ form.email(class="form-input") }}
+                {% for error in form.email.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <div class="space-y-2">
+                {{ form.name.label(class="block text-sm font-medium") }}
+                {{ form.name(class="form-input") }}
+                {% for error in form.name.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <div class="space-y-2">
+                {{ form.age.label(class="block text-sm font-medium") }}
+                {{ form.age(class="form-input") }}
+                {% for error in form.age.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <div class="space-y-2">
+                {{ form.password.label(class="block text-sm font-medium") }}
+                {{ form.password(class="form-input") }}
+                {% for error in form.password.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <div class="space-y-2">
+                {{ form.password2.label(class="block text-sm font-medium") }}
+                {{ form.password2(class="form-input") }}
+                {% for error in form.password2.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <div>
+                <button type="submit" class="w-full btn-primary">
+                    Create Account
+                </button>
+            </div>
+        </form>
+
+        <p class="mt-6 text-center text-sm text-gray-400">
+            Already have an account?
+            <a href="{{ url_for('auth.login') }}" class="text-purple-500 hover:text-purple-400 font-medium">
+                Sign in
+            </a>
+        </p>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-8">
+    <h2 class="text-3xl font-bold text-center mb-6">{{ assessment.name }} Results</h2>
+    
+    <div class="mb-8">
+        <p class="text-gray-600">Name: {{ name }}</p>
+        <p class="text-gray-600">Age: {{ age }}</p>
+    </div>
+    
+    <div class="mb-8 chart-container" style="position: relative; height: 60vh; width: 100%; max-width: 800px; margin: 0 auto;">
+        <canvas id="resultsChart"></canvas>
+    </div>
+    
+    <div class="text-center">
+        <a href="{{ url_for('download_results', assessment_id=assessment.id, name=name, age=age, score=score) }}" 
+           class="bg-blue-800 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Download Results
+        </a>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('resultsChart');
+    const ctx = canvas.getContext('2d');
+    
+    // Set high DPI for better quality
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    
+    const chartConfig = {
+        type: 'radar',
+        data: {
+            labels: ['Score'],
+            datasets: [{
+                label: 'Your Score',
+                data: [{{ score }}],
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgb(54, 162, 235)',
+                pointBackgroundColor: 'rgb(54, 162, 235)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgb(54, 162, 235)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            devicePixelRatio: dpr,
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    max: 5
+                }
+            }
+        }
+    };
+    new Chart(ctx, chartConfig);
+</script>
+{% endblock %} 

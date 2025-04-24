@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to Mindscape{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="min-h-screen flex items-center justify-center relative overflow-hidden bg-gray-900">
+    <div class="container mx-auto px-6 py-20">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div class="space-y-8">
+                <h1 class="text-6xl font-bold tracking-tight">
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
+                        Unlock Your Potential
+                    </span>
+                </h1>
+                <p class="text-xl text-gray-300 leading-relaxed">
+                    Discover your strengths, identify areas for growth, and embark on a transformative journey of self-discovery with our AI-powered personal growth assessment.
+                </p>
+                <div class="flex space-x-4">
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('assessment.take_assessment') }}" 
+                           class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-3 rounded-lg text-lg transition-colors duration-200">
+                            Explore Assessments
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('auth.register') }}" 
+                           class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-3 rounded-lg text-lg transition-colors duration-200">
+                            Get Started
+                        </a>
+                        <a href="{{ url_for('auth.login') }}" 
+                           class="bg-gray-800 hover:bg-gray-700 text-white px-8 py-3 rounded-lg text-lg transition-colors duration-200 border border-gray-700">
+                            Sign In
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="relative hidden lg:block">
+                <div class="bg-gradient-to-br from-purple-500/20 to-pink-500/20 p-8 rounded-2xl backdrop-blur-sm border border-gray-800">
+                    <h3 class="text-2xl font-bold mb-6 text-white">Your Personal Growth Journey</h3>
+                    <ul class="space-y-4">
+                        <li class="flex items-center space-x-3 text-gray-300">
+                            <span class="w-2 h-2 bg-purple-500 rounded-full"></span>
+                            <span>AI-Powered Insights</span>
+                        </li>
+                        <li class="flex items-center space-x-3 text-gray-300">
+                            <span class="w-2 h-2 bg-purple-500 rounded-full"></span>
+                            <span>Personalized Recommendations</span>
+                        </li>
+                        <li class="flex items-center space-x-3 text-gray-300">
+                            <span class="w-2 h-2 bg-purple-500 rounded-full"></span>
+                            <span>Progress Tracking</span>
+                        </li>
+                        <li class="flex items-center space-x-3 text-gray-300">
+                            <span class="w-2 h-2 bg-purple-500 rounded-full"></span>
+                            <span>Actionable Steps</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-20 bg-gray-900">
+    <div class="container mx-auto px-6">
+        <h2 class="text-4xl font-bold text-center mb-16">
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
+                Why Choose Mindscape?
+            </span>
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="bg-gray-800 rounded-xl p-8 hover:scale-105 transition-transform duration-300 border border-gray-700">
+                <div class="flex items-center justify-center w-16 h-16 rounded-full bg-purple-500/20 mb-6 mx-auto">
+                    <svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-center mb-4 text-white">AI-Powered Analysis</h3>
+                <p class="text-gray-300 text-center">Our advanced AI algorithms analyze your responses to provide deep insights into your personal growth journey.</p>
+            </div>
+            <div class="bg-gray-800 rounded-xl p-8 hover:scale-105 transition-transform duration-300 border border-gray-700">
+                <div class="flex items-center justify-center w-16 h-16 rounded-full bg-purple-500/20 mb-6 mx-auto">
+                    <svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-center mb-4 text-white">Detailed Reports</h3>
+                <p class="text-gray-300 text-center">Receive comprehensive reports with actionable recommendations tailored to your unique needs.</p>
+            </div>
+            <div class="bg-gray-800 rounded-xl p-8 hover:scale-105 transition-transform duration-300 border border-gray-700">
+                <div class="flex items-center justify-center w-16 h-16 rounded-full bg-purple-500/20 mb-6 mx-auto">
+                    <svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-center mb-4 text-white">Growth Tracking</h3>
+                <p class="text-gray-300 text-center">Monitor your progress over time and see how far you've come in your personal development journey.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-20 bg-gray-900">
+    <div class="container mx-auto px-6 text-center">
+        <div class="max-w-3xl mx-auto bg-gray-800 rounded-2xl p-12 border border-gray-700">
+            <h2 class="text-3xl font-bold mb-6 text-white">
+                Ready to Transform Your Life?
+            </h2>
+            <p class="text-xl text-gray-300 mb-8">
+                Take the first step towards a better version of yourself. Our assessment will guide you on your path to personal growth.
+            </p>
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('assessment.take_assessment') }}" 
+               class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-3 rounded-lg text-lg inline-block transition-colors duration-200">
+                Explore Assessments
+            </a>
+            {% else %}
+            <a href="{{ url_for('auth.register') }}" 
+               class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-3 rounded-lg text-lg inline-block transition-colors duration-200">
+                Start Your Journey
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %} 

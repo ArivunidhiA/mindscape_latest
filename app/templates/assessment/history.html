@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment History - Mindscape{% endblock %}
+
+{% block content %}
+<div class="min-h-screen py-12">
+    <div class="container mx-auto px-6">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-4xl font-bold mb-8">
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
+                    Your Assessment History
+                </span>
+            </h1>
+
+            {% if assessments %}
+                <div class="space-y-6">
+                    {% for assessment in assessments %}
+                    <div class="glass-card p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-xl font-semibold">Assessment #{{ assessment.id }}</h3>
+                                <p class="text-sm text-gray-400">Completed on {{ assessment.completed_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                            </div>
+                            <a href="{{ url_for('assessment.results', assessment_id=assessment.id) }}" 
+                               class="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm transition-colors duration-200">
+                                View Results
+                            </a>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {% set ei_score = assessment.get_category_score('emotional_intelligence') %}
+                            {% set ls_score = assessment.get_category_score('leadership') %}
+                            {% set pg_score = assessment.get_category_score('personal_growth') %}
+                            
+                            <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+                                <h4 class="font-semibold mb-2 text-gray-300">Emotional Intelligence</h4>
+                                <div class="flex items-end gap-1">
+                                    <div class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
+                                        {{ "%.1f"|format(ei_score) }}
+                                    </div>
+                                    <div class="text-sm text-gray-500 mb-1">/5.0</div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+                                <h4 class="font-semibold mb-2 text-gray-300">Leadership Skills</h4>
+                                <div class="flex items-end gap-1">
+                                    <div class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
+                                        {{ "%.1f"|format(ls_score) }}
+                                    </div>
+                                    <div class="text-sm text-gray-500 mb-1">/5.0</div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+                                <h4 class="font-semibold mb-2 text-gray-300">Personal Growth</h4>
+                                <div class="flex items-end gap-1">
+                                    <div class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
+                                        {{ "%.1f"|format(pg_score) }}
+                                    </div>
+                                    <div class="text-sm text-gray-500 mb-1">/5.0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="glass-card p-8 text-center">
+                    <p class="text-xl mb-6">You haven't taken any assessments yet.</p>
+                    <a href="{{ url_for('assessment.take_assessment') }}" 
+                       class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-3 rounded-lg text-lg inline-block transition-colors duration-200">
+                        Take Your First Assessment
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 
