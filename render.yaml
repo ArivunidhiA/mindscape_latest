@@ -18,9 +18,12 @@ services:
       
       # Install Python packages
       pip install -r requirements.txt
+      
+      # Verify gunicorn installation
+      which gunicorn || echo "gunicorn not found"
     startCommand: |
       . venv/bin/activate
-      python -m gunicorn --bind 0.0.0.0:$PORT wsgi:app
+      gunicorn --bind 0.0.0.0:$PORT wsgi:app
     envVars:
       - key: FLASK_APP
         value: wsgi.py
