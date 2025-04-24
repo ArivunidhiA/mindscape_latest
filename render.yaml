@@ -16,14 +16,11 @@ services:
       python -m pip install --upgrade pip
       pip install wheel setuptools
       
-      # Install gunicorn explicitly
-      pip install gunicorn==20.1.0
-      
       # Install Python packages
       pip install -r requirements.txt
     startCommand: |
       . venv/bin/activate
-      exec gunicorn --bind 0.0.0.0:$PORT wsgi:app
+      python -m gunicorn --bind 0.0.0.0:$PORT wsgi:app
     envVars:
       - key: FLASK_APP
         value: wsgi.py
