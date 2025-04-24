@@ -8,16 +8,22 @@ services:
       apt-get update
       apt-get install -y python3-dev build-essential libpq-dev
       
+      # Create and activate virtual environment
+      python -m venv venv
+      . venv/bin/activate
+      
       # Upgrade pip and install build tools
       python -m pip install --upgrade pip
       pip install wheel setuptools
       
-      # Install gunicorn first
+      # Install gunicorn explicitly
       pip install gunicorn==20.1.0
       
       # Install Python packages
       pip install -r requirements.txt
-    startCommand: python -m gunicorn wsgi:app
+    startCommand: |
+      . venv/bin/activate
+      exec gunicorn --bind 0.0.0.0:$PORT wsgi:app
     envVars:
       - key: FLASK_APP
         value: wsgi.py
@@ -25,7 +31,7 @@ services:
         value: production
       - key: PYTHONUNBUFFERED
         value: "true"
-      - key: PORT
-        value: "10000"
+      - key: WEB_CONCURRENCY
+        value: "2"
     healthCheckPath: /
     autoDeploy: false 
