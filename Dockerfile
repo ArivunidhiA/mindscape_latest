@@ -28,7 +28,7 @@ COPY . .
 # Set environment variables
 ENV FLASK_APP=app
 ENV FLASK_ENV=production
-ENV PORT=8000
+ENV PORT=8080
 
-# Start the application with the correct module path
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "app:create_app()"] 
+# Start the application
+CMD ["gunicorn", "wsgi:app"] 
