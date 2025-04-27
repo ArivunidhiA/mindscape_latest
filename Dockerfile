@@ -18,14 +18,7 @@ COPY . .
 # Set environment variables
 ENV FLASK_APP=app.py
 ENV FLASK_ENV=production
-ENV PORT=8080
-
-# Expose the port the app runs on
-EXPOSE 8080
-
-# Create a non-root user
-RUN useradd -m myuser
-USER myuser
+ENV PYTHONUNBUFFERED=1
 
 # Command to run the application
-CMD flask run --host=0.0.0.0 --port=8080 
+CMD ["gunicorn", "wsgi:app"] 
