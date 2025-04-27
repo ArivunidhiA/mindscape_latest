@@ -19,9 +19,11 @@ COPY . .
 ENV FLASK_APP=app.py
 ENV FLASK_ENV=production
 ENV PORT=8080
+ENV PYTHONUNBUFFERED=1
+ENV GUNICORN_CMD_ARGS="--workers=2 --threads=2 --timeout=0 --worker-class=gthread"
 
 # Expose the port the app runs on
 EXPOSE 8080
 
 # Command to run the application
-CMD gunicorn --bind 0.0.0.0:8080 wsgi:app 
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "wsgi:app"] 
