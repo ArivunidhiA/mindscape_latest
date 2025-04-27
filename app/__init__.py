@@ -42,5 +42,17 @@ def create_app(config_class=Config):
         
         # Create database tables
         db.create_all()
+        
+        # Register CLI commands
+        from app.cli import register_commands
+        register_commands(app)
+        
+        # Auto-seed questions if none exist
+        from app.models.assessment import Question
+        if Question.query.count() == 0:
+            from flask.cli import with_appcontext
+            from app.cli import seed_questions
+            with app.app_context():
+                seed_questions()
     
     return app 
