@@ -29,6 +29,7 @@ COPY . .
 ENV FLASK_APP=app
 ENV FLASK_ENV=production
 ENV PORT=8080
+ENV PYTHONPATH=/app
 
 # Start the application
-CMD gunicorn --bind 0.0.0.0:$PORT application:app 
+CMD gunicorn --bind 0.0.0.0:$PORT wsgi:app 
