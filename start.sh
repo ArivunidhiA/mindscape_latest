@@ -10,6 +10,6 @@ export FLASK_APP=app
 export FLASK_ENV=production
 export PORT=${PORT:-8000}
 
-# Start Gunicorn
+# Start Gunicorn using config file
 echo "Starting Gunicorn..."
-gunicorn "app:create_app()" --bind 0.0.0.0:$PORT --workers 2 --threads 4 --worker-class gthread 
+gunicorn -c gunicorn.conf.py "app:create_app()" 
