@@ -5,12 +5,8 @@ from wtforms.validators import DataRequired
 import json
 import os
 from datetime import datetime
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
-from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
+from app.utils.pdf_generator import generate_pdf_report
+from flask_login import current_user
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'  # Change this in production
@@ -59,41 +55,47 @@ def assessment(assessment_id):
 
 @app.route('/download/<assessment_id>')
 def download_results(assessment_id):
+    """Download assessment results as PDF."""
     assessment = next((a for a in assessments if a['id'] == assessment_id), None)
     if not assessment:
         return "Assessment not found", 404
     
-    name = request.args.get('name')
-    age = request.args.get('age')
-    score = request.args.get('score')
+    # Get assessment info and scores
+    assessment_info = {
+        'name': assessment['name'],
+        'description': assessment['description'],
+        'max_score': 5  # Default max score
+    }
     
-    # Create PDF
-    filename = f"results_{assessment_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-    doc = SimpleDocTemplate(filename, pagesize=letter)
-    styles = getSampleStyleSheet()
-    story = []
+    # Calculate category scores (example - replace with actual logic)
+    category_scores = {}
+    responses = request.args.get('responses', '{}')
+    responses = json.loads(responses)
     
-    # Add title
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=24,
-        spaceAfter=30
+    # Group questions by category and calculate average scores
+    for category in set(q.get('category', 'general') for q in assessment['questions']):
+        category_questions = [q for q in assessment['questions'] if q.get('category', 'general') == category]
+        if category_questions:
+            category_scores[category] = sum(float(responses.get(q['id'], 0)) for q in category_questions) / len(category_questions)
+    
+    # Create a mock user object if not using authentication
+    class MockUser:
+        def __init__(self, name):
+            self.name = name
+    
+    user = current_user if hasattr(current_user, 'is_authenticated') else MockUser(request.args.get('name', 'Anonymous'))
+    
+    # Generate PDF
+    pdf_path = generate_pdf_report(assessment, user, assessment_info, category_scores)
+    
+    # The pdf_path returned is relative to static folder
+    full_path = os.path.join(app.root_path, 'static', pdf_path.lstrip('/static/'))
+    
+    return send_file(
+        full_path,
+        as_attachment=True,
+        download_name=f"{assessment['name']}_Results.pdf"
     )
-    story.append(Paragraph(f"{assessment['name']} Assessment Results", title_style))
-    
-    # Add user info
-    story.append(Paragraph(f"Name: {name}", styles['Normal']))
-    story.append(Paragraph(f"Age: {age}", styles['Normal']))
-    story.append(Spacer(1, 20))
-    
-    # Add score
-    story.append(Paragraph(f"Score: {score}", styles['Heading2']))
-    
-    # Build PDF
-    doc.build(story)
-    
-    return send_file(filename, as_attachment=True)
 
 def calculate_score(assessment_id, responses):
     # This is a placeholder. Implement actual scoring logic based on assessment type

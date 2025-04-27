@@ -1,11 +1,28 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, send_file
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from app.models.assessment import Question, Assessment, AssessmentResponse, ASSESSMENT_TYPES
 from app import db
 from datetime import datetime
+from app.utils.pdf_generator import generate_pdf_report
+import os
+from threading import Thread
+import json
+from flask import current_app
 
 bp = Blueprint('assessment', __name__)
+
+def get_assessment_type(assessment_type):
+    """
+    Get assessment type information from ASSESSMENT_TYPES.
+    
+    Args:
+        assessment_type (str): The type of assessment
+        
+    Returns:
+        dict: Assessment type information or None if not found
+    """
+    return ASSESSMENT_TYPES.get(assessment_type)
 
 class AssessmentForm(FlaskForm):
     """Empty form class for CSRF protection"""
@@ -101,33 +118,123 @@ def submit_assessment(assessment_type):
         flash('An error occurred while saving your responses. Please try again.', 'error')
         return redirect(url_for('assessment.assessment_type', assessment_type=assessment_type))
 
+def generate_pdf_async(assessment, user, assessment_info, category_scores):
+    """Generate PDF report in a background thread."""
+    try:
+        # Create static/pdfs directory if it doesn't exist
+        pdf_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'pdfs')
+        os.makedirs(pdf_dir, exist_ok=True)
+        
+        # Generate the PDF report
+        pdf_path = generate_pdf_report(assessment, current_user, assessment_info, category_scores)
+        
+        if pdf_path:
+            # Verify the file exists
+            full_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', pdf_path.lstrip('/'))
+            if not os.path.exists(full_path):
+                return None
+            return pdf_path
+    except Exception as e:
+        print(f"Error in async PDF generation: {str(e)}")
+        return None
+
 @bp.route('/results/<int:assessment_id>')
 @login_required
 def results(assessment_id):
-    """Display assessment results."""
-    assessment = Assessment.query.get_or_404(assessment_id)
-    
-    # Ensure the user can only view their own results
-    if assessment.user_id != current_user.id:
-        flash('You do not have permission to view these results.', 'error')
-        return redirect(url_for('main.index'))
-    
-    # Get assessment type info
-    assessment_info = ASSESSMENT_TYPES.get(assessment.assessment_type)
-    if not assessment_info:
-        flash('Invalid assessment type.', 'error')
+    """Display assessment results and generate PDF report."""
+    try:
+        # Get assessment and verify user has permission to view it
+        assessment = Assessment.query.get_or_404(assessment_id)
+        if assessment.user_id != current_user.id:
+            flash('You do not have permission to view these results.', 'error')
+            return redirect(url_for('assessment.history'))
+
+        # Get assessment type info
+        assessment_info = get_assessment_type(assessment.assessment_type)
+        if not assessment_info:
+            flash('Invalid assessment type.', 'error')
+            return redirect(url_for('assessment.history'))
+
+        # Calculate category scores
+        category_scores = {}
+        category_counts = {}
+        
+        # Initialize scores for all categories
+        for category in assessment_info['categories']:
+            category_scores[category] = 0
+            category_counts[category] = 0
+        
+        # Sum up scores for each category
+        for response in assessment.responses:
+            category = response.question.category
+            category_scores[category] += response.score
+            category_counts[category] += 1
+        
+        # Calculate average for each category
+        for category in category_scores:
+            if category_counts[category] > 0:
+                category_scores[category] = round(
+                    category_scores[category] / category_counts[category],
+                    2
+                )
+
+        # Generate PDF report
+        pdf_path = generate_pdf_report(
+            assessment=assessment,
+            user=current_user,
+            assessment_info=assessment_info,
+            category_scores=category_scores
+        )
+        
+        if pdf_path:
+            # Verify the PDF file exists
+            pdf_file = os.path.join(current_app.root_path, pdf_path.lstrip('/'))
+            if not os.path.exists(pdf_file):
+                print(f"PDF file not found at {pdf_file}")
+                pdf_path = None
+            else:
+                # Get just the filename for the download route
+                pdf_path = os.path.basename(pdf_file)
+
+        return render_template(
+            'assessment/results.html',
+            assessment=assessment,
+            category_scores=category_scores,
+            assessment_info=assessment_info,
+            pdf_path=pdf_path
+        )
+
+    except Exception as e:
+        print(f"Error in results route: {str(e)}")
+        flash('An error occurred while generating the results.', 'error')
         return redirect(url_for('assessment.history'))
-    
-    # Calculate scores for each category
-    category_scores = {}
-    for category in assessment_info['categories']:
-        score = assessment.get_category_score(category)
-        category_scores[category] = score
-    
-    return render_template('assessment/results.html', 
-                         assessment=assessment,
-                         assessment_info=assessment_info,
-                         category_scores=category_scores)
+
+@bp.route('/api/pdf_status/<int:assessment_id>')
+@login_required
+def check_pdf_status(assessment_id):
+    """Check if PDF has been generated for the assessment."""
+    try:
+        # Look for the PDF file
+        pdf_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'pdfs')
+        pattern = f"assessment_report_{assessment_id}_*.pdf"
+        matches = []
+        for filename in os.listdir(pdf_dir):
+            if filename.startswith(f"assessment_report_{assessment_id}_") and filename.endswith(".pdf"):
+                matches.append(filename)
+        
+        if matches:
+            # Get the most recent PDF
+            latest_pdf = sorted(matches)[-1]
+            return jsonify({
+                'status': 'ready',
+                'pdf_path': f'/static/pdfs/{latest_pdf}'
+            })
+        
+        return jsonify({'status': 'generating'})
+        
+    except Exception as e:
+        print(f"Error checking PDF status: {str(e)}")
+        return jsonify({'status': 'error'})
 
 @bp.route('/history')
 @login_required
@@ -163,8 +270,40 @@ def api_results(assessment_id):
         category_scores[category] = score
     
     return jsonify({
-        'type': assessment_info['visualization'],
-        'categories': assessment_info['categories'],
+        'type': assessment_info.get('visualization', 'radar'),  # Default to radar if not specified
+        'categories': list(category_scores.keys()),
         'scores': list(category_scores.values()),
         'max_score': assessment_info['max_score']
-    }) 
+    })
+
+@bp.route('/download/<path:filename>')
+@login_required
+def download_pdf(filename):
+    """Download PDF report."""
+    try:
+        # Security check - ensure filename is a PDF
+        if not filename.endswith('.pdf'):
+            flash('Invalid file request.', 'error')
+            return redirect(url_for('assessment.history'))
+            
+        # Get full path
+        pdf_dir = os.path.join(current_app.root_path, 'static', 'pdfs')
+        file_path = os.path.join(pdf_dir, filename)
+        
+        # Security check - ensure file exists and is within pdfs directory
+        if not os.path.exists(file_path) or not os.path.commonpath([file_path, pdf_dir]) == pdf_dir:
+            flash('File not found.', 'error')
+            return redirect(url_for('assessment.history'))
+            
+        # Send the file
+        return send_file(
+            file_path,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=filename
+        )
+        
+    except Exception as e:
+        print(f"Error downloading PDF: {str(e)}")
+        flash('Error downloading file.', 'error')
+        return redirect(url_for('assessment.history')) 

@@ -18,23 +18,50 @@
                     
                     {% for question in questions %}
                     <div class="question-container bg-gray-800 bg-opacity-50 rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                        <h3 class="text-xl font-semibold mb-4 text-white">{{ question.text }}</h3>
+                        <h3 class="text-xl font-semibold mb-4 text-white">
+                            <span class="text-purple-500 mr-2">Q{{ loop.index }}.</span>
+                            {{ question.text }}
+                        </h3>
                         <p class="text-sm text-gray-400 mb-4">Category: {{ question.category|replace('_', ' ')|title }}</p>
-                        <div class="space-y-4">
+                        
+                        {% if assessment_info.max_score == 10 %}
+                        <!-- Slider for 1-10 scale -->
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-4">
+                                <input type="range" 
+                                       id="q{{ question.id }}_slider" 
+                                       name="question_{{ question.id }}"
+                                       min="1" 
+                                       max="10" 
+                                       value="5"
+                                       class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                                       required>
+                                <span id="q{{ question.id }}_value" class="text-purple-500 font-semibold min-w-[3ch]">5</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-400">
+                                <span>Almost Never</span>
+                                <span>Occasionally</span>
+                                <span>Almost Always</span>
+                            </div>
+                        </div>
+                        {% else %}
+                        <!-- Radio buttons for other scales -->
+                        <div class="grid grid-cols-5 gap-2">
                             {% for i in range(1, assessment_info.max_score + 1) %}
-                            <div class="flex items-center hover:bg-gray-700 p-2 rounded-lg transition-colors duration-200">
+                            <div class="flex items-center justify-center p-2 rounded-lg hover:bg-gray-700 transition-colors duration-200">
                                 <input type="radio" 
                                        id="q{{ question.id }}_{{ i }}" 
                                        name="question_{{ question.id }}" 
                                        value="{{ i }}"
                                        class="form-radio h-4 w-4 text-purple-500 focus:ring-purple-500 focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800"
                                        required>
-                                <label for="q{{ question.id }}_{{ i }}" class="ml-3 text-gray-300 hover:text-white cursor-pointer">
+                                <label for="q{{ question.id }}_{{ i }}" class="ml-2 text-gray-300 hover:text-white cursor-pointer text-center">
                                     {{ question.get_scale_label(i) }}
                                 </label>
                             </div>
                             {% endfor %}
                         </div>
+                        {% endif %}
                     </div>
                     {% endfor %}
 
@@ -53,4 +80,17 @@
         </div>
     </div>
 </div>
+
+<script>
+// Update slider value display
+document.addEventListener('DOMContentLoaded', function() {
+    const sliders = document.querySelectorAll('input[type="range"]');
+    sliders.forEach(slider => {
+        const valueDisplay = document.getElementById(slider.id + '_value');
+        slider.addEventListener('input', function() {
+            valueDisplay.textContent = this.value;
+        });
+    });
+});
+</script>
 {% endblock %} 

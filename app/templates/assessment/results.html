@@ -1,220 +1,216 @@
 {% extends "base.html" %}
 
-{% block title %}{{ assessment_info.name }} Results - Mindscape{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.css">
-{% endblock %}
+{% block title %}Assessment Results - Mindscape{% endblock %}
 
 {% block content %}
 <div class="min-h-screen py-12 bg-gray-900">
     <div class="container mx-auto px-6">
-        <div class="max-w-6xl mx-auto">
-            <div class="glass-card p-8 rounded-lg shadow-xl bg-gray-800 bg-opacity-50">
-                <div class="flex justify-between items-start mb-8">
-                    <h1 class="text-3xl font-bold">
-                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
-                            {{ assessment_info.name }} Results
-                        </span>
-                    </h1>
-                    <button onclick="downloadResults()" 
-                            class="btn-primary bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-2 rounded-lg transition-colors duration-200 flex items-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                        </svg>
-                        Download Results
-                    </button>
+        <div class="max-w-4xl mx-auto">
+            <div class="glass-card p-8 rounded-lg shadow-xl bg-gray-800 bg-opacity-50 mb-6">
+                <h1 class="text-3xl font-bold mb-4">
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
+                        {{ assessment_info['name'] }}
+                    </span>
+                </h1>
+                <p class="text-gray-400">
+                    Completed on: {{ assessment.completed_at.strftime('%B %d, %Y at %I:%M %p') }}
+                </p>
+                
+                {% if pdf_path %}
+                <div class="mt-6 p-4 bg-green-500 bg-opacity-20 rounded-lg border border-green-500 border-opacity-20">
+                    <p class="text-green-400 mb-3">Your assessment report has been generated!</p>
+                    <a href="{{ url_for('assessment.download_pdf', filename=pdf_path) }}" 
+                       class="btn-primary bg-gradient-to-r from-green-500 to-green-400 hover:from-green-600 hover:to-green-500 text-white px-6 py-2 rounded-lg transition-colors duration-200 inline-flex items-center">
+                        <i class="fas fa-download mr-2"></i> Download Results
+                    </a>
                 </div>
+                {% endif %}
+            </div>
 
-                <div class="mb-8">
-                    <p class="text-gray-300">Completed on: {{ assessment.completed_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
-                </div>
-
-                <!-- Chart Container -->
-                <div class="aspect-w-16 aspect-h-9 mb-8">
-                    <canvas id="resultChart" class="w-full h-full"></canvas>
-                </div>
-
-                <!-- Summary Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-                    {% for category, score in category_scores.items() %}
-                    <div class="glass-card p-6 rounded-lg bg-gray-800 bg-opacity-50">
-                        <h3 class="text-xl font-semibold mb-2 text-white">{{ category|replace('_', ' ')|title }}</h3>
-                        <div class="flex items-end space-x-2">
-                            <span class="text-4xl font-bold text-purple-500">{{ "%.1f"|format(score) }}</span>
-                            <span class="text-gray-400">/ {{ assessment_info.max_score }}.0</span>
-                        </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <div class="glass-card col-span-2 p-6 rounded-lg shadow-xl bg-gray-800 bg-opacity-50">
+                    <h3 class="text-xl font-semibold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
+                        Results Overview
+                    </h3>
+                    <div class="relative h-[400px] w-full">
+                        <canvas id="resultsChart"></canvas>
                     </div>
-                    {% endfor %}
+                </div>
+
+                <div class="glass-card p-6 rounded-lg shadow-xl bg-gray-800 bg-opacity-50">
+                    <h3 class="text-xl font-semibold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
+                        Category Scores
+                    </h3>
+                    <div class="space-y-4">
+                        {% for category, score in category_scores.items() %}
+                        <div class="bg-gray-700 bg-opacity-50 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-gray-300">{{ category|replace('_', ' ')|title }}</span>
+                                <span class="text-purple-400 font-semibold">{{ score }}</span>
+                            </div>
+                            <div class="h-2 bg-gray-600 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-purple-500 to-pink-500" 
+                                     style="width: {{ (score / assessment_info['max_score']) * 100 }}%">
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
 
-            <div class="flex justify-center mt-8">
-                <a href="{{ url_for('assessment.take_assessment') }}" 
-                   class="btn-secondary bg-gray-700 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors duration-200">
-                    Back to Assessments
-                </a>
+            <div class="glass-card p-8 rounded-lg shadow-xl bg-gray-800 bg-opacity-50">
+                <h3 class="text-xl font-semibold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
+                    Assessment Description
+                </h3>
+                <p class="text-gray-300 mb-6">{{ assessment_info['description'] }}</p>
+                
+                <div class="mt-6">
+                    <h4 class="text-lg font-semibold mb-3 text-gray-200">Categories Assessed:</h4>
+                    <div class="flex flex-wrap gap-2">
+                        {% for category in assessment_info['categories'] %}
+                        <span class="px-3 py-1 rounded-full text-sm bg-purple-500 bg-opacity-20 text-purple-300">
+                            {{ category|replace('_', ' ')|title }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-<script>
+{% block scripts %}
+<script type="text/javascript">
 document.addEventListener('DOMContentLoaded', function() {
-    // Fetch results data and create chart
-    fetch('{{ url_for("assessment.api_results", assessment_id=assessment.id) }}')
-        .then(response => response.json())
-        .then(data => {
-            createChart(data);
+    try {
+        console.log('Initializing chart...');
+        
+        // Parse the data from the template
+        const categories = {{ category_scores.keys() | list | tojson | safe }}.map(cat => 
+            cat.replace(/_/g, ' ').split(' ').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ')
+        );
+        const scores = {{ category_scores.values() | list | tojson | safe }};
+        const maxScore = {{ assessment_info.max_score }};
+        const visualizationType = '{{ assessment_info.visualization }}';
+
+        console.log('Chart Data:', {
+            categories,
+            scores,
+            maxScore,
+            visualizationType
         });
-});
 
-function createChart(data) {
-    const ctx = document.getElementById('resultChart').getContext('2d');
-    const chartConfig = getChartConfig(data);
-    new Chart(ctx, chartConfig);
-}
-
-function getChartConfig(data) {
-    const configs = {
-        'radar': {
-            type: 'radar',
-            data: {
-                labels: data.categories.map(c => c.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())),
-                datasets: [{
-                    label: 'Your Score',
-                    data: data.scores,
-                    backgroundColor: 'rgba(147, 51, 234, 0.2)',
-                    borderColor: 'rgba(147, 51, 234, 1)',
-                    pointBackgroundColor: 'rgba(147, 51, 234, 1)',
-                    pointBorderColor: '#fff',
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: 'rgba(147, 51, 234, 1)'
-                }]
-            },
-            options: {
-                scales: {
-                    r: {
-                        beginAtZero: true,
-                        max: data.max_score,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                }
-            }
-        },
-        'circumplex': {
-            type: 'polarArea',
-            data: {
-                labels: data.categories.map(c => c.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())),
-                datasets: [{
-                    data: data.scores,
-                    backgroundColor: data.categories.map((_, i) => `hsla(${(i * 360 / data.categories.length)}, 70%, 60%, 0.6)`)
-                }]
-            },
-            options: {
-                scales: {
-                    r: {
-                        max: data.max_score,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                }
-            }
-        },
-        'pentagon': {
-            type: 'radar',
-            data: {
-                labels: data.categories.map(c => c.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())),
-                datasets: [{
-                    label: 'Your Score',
-                    data: data.scores,
-                    backgroundColor: 'rgba(147, 51, 234, 0.2)',
-                    borderColor: 'rgba(147, 51, 234, 1)',
-                    pointBackgroundColor: 'rgba(147, 51, 234, 1)',
-                    pointBorderColor: '#fff'
-                }]
-            },
-            options: {
-                scales: {
-                    r: {
-                        beginAtZero: true,
-                        max: data.max_score,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                }
-            }
-        },
-        'polar': {
-            type: 'polarArea',
-            data: {
-                labels: data.categories.map(c => c.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())),
-                datasets: [{
-                    data: data.scores,
-                    backgroundColor: [
-                        'rgba(255, 99, 132, 0.6)',
-                        'rgba(54, 162, 235, 0.6)',
-                        'rgba(255, 206, 86, 0.6)',
-                        'rgba(75, 192, 192, 0.6)'
-                    ]
-                }]
-            },
-            options: {
-                scales: {
-                    r: {
-                        max: data.max_score,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                }
-            }
+        const ctx = document.getElementById('resultsChart');
+        if (!ctx) {
+            console.error('Could not find canvas element');
+            return;
         }
-    };
 
-    return configs[data.type];
-}
+        const chartConfigs = {
+            bar: {
+                type: 'bar',
+                data: {
+                    labels: categories,
+                    datasets: [{
+                        label: 'Category Scores',
+                        data: scores,
+                        backgroundColor: 'rgba(147, 112, 219, 0.5)',
+                        borderColor: 'rgba(147, 112, 219, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: maxScore,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            }
+                        }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            },
+            radar: {
+                type: 'radar',
+                data: {
+                    labels: categories,
+                    datasets: [{
+                        label: 'Category Scores',
+                        data: scores,
+                        backgroundColor: 'rgba(147, 112, 219, 0.5)',
+                        borderColor: 'rgba(147, 112, 219, 1)',
+                        borderWidth: 1,
+                        pointBackgroundColor: 'rgba(147, 112, 219, 1)'
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: maxScore,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                backdropColor: 'transparent'
+                            },
+                            pointLabels: {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            }
+                        }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            }
+        };
 
-async function downloadResults() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    
-    // Add title
-    doc.setFontSize(20);
-    doc.text("{{ assessment_info.name }} Results", 20, 20);
-    
-    // Add user info
-    doc.setFontSize(12);
-    doc.text("Name: {{ current_user.name }}", 20, 40);
-    doc.text("Age: {{ current_user.age }}", 20, 50);
-    doc.text("Date: {{ assessment.completed_at.strftime('%B %d, %Y at %I:%M %p') }}", 20, 60);
-    
-    // Add chart
-    const canvas = document.getElementById('resultChart');
-    const chartImage = canvas.toDataURL('image/png');
-    doc.addImage(chartImage, 'PNG', 20, 80, 170, 100);
-    
-    // Add scores
-    let y = 190;
-    doc.text("Category Scores:", 20, y);
-    y += 10;
-    {% for category, score in category_scores.items() %}
-    doc.text("{{ category|replace('_', ' ')|title }}: {{ "%.1f"|format(score) }}/{{ assessment_info.max_score }}.0", 20, y);
-    y += 10;
-    {% endfor %}
-    
-    // Save the PDF
-    doc.save('{{ assessment_info.name|replace(" ", "_") }}_Results.pdf');
-}
+        // Get the appropriate chart configuration or default to radar
+        const chartConfig = chartConfigs[visualizationType] || chartConfigs.radar;
+        console.log('Using chart type:', chartConfig.type);
+
+        // Create the chart
+        new Chart(ctx, chartConfig);
+        console.log('Chart initialized successfully');
+    } catch (error) {
+        console.error('Error initializing chart:', error);
+    }
+});
 </script>
-{% endblock %} 
+{% endblock %}

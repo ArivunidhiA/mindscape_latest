@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, session, jsonify
 from flask_login import login_required, current_user
 from app import db
-from app.models.assessment import Assessment, ASSESSMENT_QUESTIONS
+from app.models.assessment import Assessment, ASSESSMENT_QUESTIONS, ASSESSMENT_TYPES
 from app.utils.scoring import calculate_scores
 from app.utils.pdf_generator import generate_pdf_report
 
@@ -137,8 +137,19 @@ def take_assessment_post():
         db.session.add(assessment)
         db.session.commit()
         
-        # Generate PDF report
-        pdf_path = generate_pdf_report(assessment, current_user)
+        # Get assessment type info
+        assessment_info = ASSESSMENT_TYPES.get(assessment.assessment_type)
+        if not assessment_info:
+            return jsonify({'error': 'Invalid assessment type'}), 400
+        
+        # Calculate category scores
+        category_scores = {}
+        for category in assessment_info['categories']:
+            score = assessment.get_category_score(category)
+            category_scores[category] = score
+        
+        # Generate PDF report with all required parameters
+        pdf_path = generate_pdf_report(assessment, current_user, assessment_info, category_scores)
         
         return jsonify({
             'success': True,
