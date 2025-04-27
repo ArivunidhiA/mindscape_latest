@@ -32,11 +32,13 @@ def create_app(config_class=Config):
         from app.routes.auth import bp as auth_bp
         from app.routes.assessment import bp as assessment_bp
         from app.routes.main import bp as main_bp
+        from app.routes.health import bp as health_bp
         
         # Register blueprints
         app.register_blueprint(auth_bp, url_prefix='/auth')
         app.register_blueprint(assessment_bp, url_prefix='/assessment')
         app.register_blueprint(main_bp)  # No url_prefix for main blueprint
+        app.register_blueprint(health_bp)  # No url_prefix for health checks
         
         # Create database tables
         db.create_all()
