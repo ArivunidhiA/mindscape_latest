@@ -6,10 +6,10 @@ if [ -d ".venv" ]; then
 fi
 
 # Export necessary environment variables
-export FLASK_APP=app.py
+export FLASK_APP=app
 export FLASK_ENV=production
 export PORT=${PORT:-8000}
 
 # Start Gunicorn
 echo "Starting Gunicorn..."
-cd /app && python3 -m gunicorn app:app 
+gunicorn "app:create_app()" 

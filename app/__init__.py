@@ -13,20 +13,21 @@ mail = Mail()
 migrate = Migrate()
 csrf = CSRFProtect()
 
-def create_app(config_class=Config):
+def create_app():
     app = Flask(__name__)
-    app.config.from_object(config_class)
     
-    # Initialize the Config class
-    config_class.init_app(app)
-    
+    # Configuration
+    app.config['SECRET_KEY'] = 'dev'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
     # Initialize extensions
     db.init_app(app)
+    migrate.init_app(app, db)
     login_manager.init_app(app)
     mail.init_app(app)
-    migrate.init_app(app, db)
     csrf.init_app(app)
-    
+
     with app.app_context():
         # Import blueprints
         from app.routes.auth import bp as auth_bp
