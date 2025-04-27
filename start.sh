@@ -5,11 +5,6 @@ if [ -d ".venv" ]; then
     source .venv/bin/activate
 fi
 
-# Default port for local development is 8000
-if [ -z "${PORT}" ]; then
-    export PORT=8000
-fi
-
 # Start Gunicorn with absolute minimal configuration
-echo "Starting Gunicorn on port ${PORT}..."
-exec gunicorn "wsgi:app" --workers 4 
+echo "Starting Gunicorn..."
+exec gunicorn wsgi:app 
