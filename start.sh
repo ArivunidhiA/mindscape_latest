@@ -6,4 +6,4 @@ export FLASK_ENV=production
 export PORT=${PORT:-8080}
 
 # Start Gunicorn
-gunicorn wsgi:app 
+gunicorn --bind 0.0.0.0:$PORT application:app 

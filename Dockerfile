@@ -31,4 +31,4 @@ ENV FLASK_ENV=production
 ENV PORT=8080
 
 # Start the application
-CMD ["gunicorn", "wsgi:app"] 
+CMD gunicorn --bind 0.0.0.0:$PORT application:app 
