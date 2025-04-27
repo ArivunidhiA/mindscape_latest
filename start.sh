@@ -5,6 +5,11 @@ if [ -d ".venv" ]; then
     source .venv/bin/activate
 fi
 
-# Start Gunicorn with correct WSGI application
+# Export necessary environment variables
+export FLASK_APP=app.py
+export FLASK_ENV=production
+export PORT=${PORT:-8000}
+
+# Start Gunicorn
 echo "Starting Gunicorn..."
-exec gunicorn "wsgi:app" 
+python -m gunicorn wsgi:app 
