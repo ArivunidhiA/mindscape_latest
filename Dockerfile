@@ -19,6 +19,8 @@ COPY . .
 ENV FLASK_APP=app.py
 ENV FLASK_ENV=production
 ENV PYTHONUNBUFFERED=1
+ENV WEB_CONCURRENCY=2
+ENV PYTHON_MAX_MEMORY_MB=512
 
 # Command to run the application
-CMD ["gunicorn", "wsgi:app"] 
+CMD ["gunicorn", "--config", "gunicorn.conf.py", "wsgi:app"] 

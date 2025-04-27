@@ -1,1 +1,1 @@
-web: gunicorn wsgi:app --workers 4 --worker-class sync 
+web: gunicorn wsgi:app --workers=2 --threads=2 --worker-class=gthread --timeout=120 --max-requests=1000 
