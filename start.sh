@@ -12,4 +12,4 @@ export PORT=${PORT:-8000}
 
 # Start Gunicorn
 echo "Starting Gunicorn..."
-python -m gunicorn wsgi:app 
+cd /app && python3 -m gunicorn app:app 
