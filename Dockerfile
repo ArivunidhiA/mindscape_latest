@@ -32,4 +32,4 @@ ENV PORT=8080
 ENV PYTHONPATH=/app
 
 # Start the application
-CMD gunicorn --bind 0.0.0.0:$PORT wsgi:app 
+CMD gunicorn wsgi:app 

@@ -7,4 +7,4 @@ export PORT=${PORT:-8080}
 export PYTHONPATH=/app
 
 # Start Gunicorn
-gunicorn --bind 0.0.0.0:$PORT wsgi:app 
+gunicorn wsgi:app 
