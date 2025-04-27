@@ -10,6 +10,6 @@ if [ -z "${PORT}" ]; then
     export PORT=8000
 fi
 
-# Start Gunicorn with minimal configuration
+# Start Gunicorn with minimal configuration and explicitly set worker class to sync
 echo "Starting Gunicorn on port ${PORT}..."
-exec gunicorn wsgi:app --bind 0.0.0.0:$PORT 
+exec gunicorn wsgi:app --bind 0.0.0.0:$PORT --worker-class sync 
