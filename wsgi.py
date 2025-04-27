@@ -1,7 +1,3 @@
 from app import create_app
 
-app = create_app()
-
-# Only for local development
-if __name__ == "__main__":
-    app.run() 
+app = create_app() 
