@@ -1,17 +1,22 @@
 services:
   - type: web
     name: mindscape
-    runtime: python
-    rootDirectory: flask-app
+    env: python
+    region: oregon  # Choose the region closest to your users
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --chdir flask-app
+    startCommand: gunicorn run:app
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.0
       - key: FLASK_APP
-        value: app.py
+        value: run.py
       - key: FLASK_ENV
         value: production
       - key: SECRET_KEY
         generateValue: true
-      - key: PYTHON_VERSION
-        value: 3.9.7
-    autoDeploy: false
+    autoDeploy: true
+    healthCheckPath: /
+    disk:
+      name: mindscape-data
+      mountPath: /data
+      sizeGB: 1
