@@ -5,6 +5,6 @@ if [ -d ".venv" ]; then
     source .venv/bin/activate
 fi
 
-# Start Gunicorn with absolute minimal configuration
+# Start Gunicorn with correct WSGI application
 echo "Starting Gunicorn..."
-exec gunicorn app:app 
+exec gunicorn "wsgi:app" 
