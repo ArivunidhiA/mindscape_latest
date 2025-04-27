@@ -7,15 +7,7 @@ fi
 
 # Set default environment variables if not set
 export PORT=${PORT:-8000}
-export WORKERS=${WORKERS:-2}
-export THREADS=${THREADS:-2}
-export TIMEOUT=${TIMEOUT:-120}
 
-# Start Gunicorn with basic configuration
+# Start Gunicorn with minimal configuration
 echo "Starting Gunicorn..."
-exec gunicorn "wsgi:app" \
-    --bind "0.0.0.0:$PORT" \
-    --workers $WORKERS \
-    --threads $THREADS \
-    --timeout $TIMEOUT \
-    --worker-class gthread 
+exec gunicorn wsgi:app -b 0.0.0.0:$PORT -w 2 
