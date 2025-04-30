@@ -1,29 +1,33 @@
 import os
 from pathlib import Path
 import secrets
+from dotenv import load_dotenv
 
 # Get the absolute path to the flask-app directory
-basedir = Path(__file__).resolve().parent
+basedir = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(basedir, '.env'))
 
 class Config:
-    # Generate a secure random secret key
-    SECRET_KEY = secrets.token_hex(32)
+    # Security settings
+    SECRET_KEY = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
+    SESSION_COOKIE_SECURE = True  # Required for production HTTPS
+    SESSION_COOKIE_HTTPONLY = True
+    PERMANENT_SESSION_LIFETIME = 3600
+    PREFERRED_URL_SCHEME = 'https'  # Required for production
     
-    # Use absolute path for database
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + str(basedir / 'app.db')
+    # Database settings
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'app.db'))
+    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgres://", "postgresql://", 1)
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # Security settings
-    SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
-    SESSION_COOKIE_HTTPONLY = True
-    PERMANENT_SESSION_LIFETIME = 3600  # 1 hour
-    
     # Mail settings
-    MAIL_SERVER = 'localhost'
-    MAIL_PORT = 25
-    MAIL_USE_TLS = False
-    MAIL_USERNAME = None
-    MAIL_PASSWORD = None
+    MAIL_SERVER = os.environ.get('MAIL_SERVER')
+    MAIL_PORT = int(os.environ.get('MAIL_PORT') or 25)
+    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS') is not None
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     ADMINS = ['your-email@example.com']
 
     @staticmethod
@@ -39,16 +43,15 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
     DEVELOPMENT = True
-    # More permissive CORS settings for local development
-    CORS_HEADERS = 'Content-Type'
-    # Use a simpler secret key for development
-    SECRET_KEY = 'dev'
-    # Use the same database file as production for development
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + str(basedir / 'app.db')
-    # Disable email configuration for development
-    MAIL_SERVER = None
+    SESSION_COOKIE_SECURE = False
+    PREFERRED_URL_SCHEME = 'http'
+    
+class ProductionConfig(Config):
+    DEBUG = False
+    DEVELOPMENT = False
     
 config = {
     'development': DevelopmentConfig,
-    'default': Config
+    'production': ProductionConfig,
+    'default': ProductionConfig
 } 
