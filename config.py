@@ -20,7 +20,7 @@ class Config:
     if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
         SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgres://", "postgresql://", 1)
     if SQLALCHEMY_DATABASE_URI and 'postgresql://' in SQLALCHEMY_DATABASE_URI:
-        SQLALCHEMY_DATABASE_URI += "?sslmode=prefer&ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory"
+        SQLALCHEMY_DATABASE_URI += "?sslmode=verify-full"
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
