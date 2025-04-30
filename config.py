@@ -16,11 +16,11 @@ class Config:
     PREFERRED_URL_SCHEME = 'https'  # Required for production
     
     # Database settings
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'app.db'))
-    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
-        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgres://", "postgresql://", 1)
-    if SQLALCHEMY_DATABASE_URI and 'postgresql://' in SQLALCHEMY_DATABASE_URI:
-        SQLALCHEMY_DATABASE_URI += "?sslmode=require"
+    url = os.getenv("DATABASE_URL", 'sqlite:///' + os.path.join(basedir, 'app.db'))
+    url = url.replace("postgres://", "postgresql://")
+    if "sslmode" not in url and "postgresql://" in url:
+        url += "?sslmode=require"
+    SQLALCHEMY_DATABASE_URI = url
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
