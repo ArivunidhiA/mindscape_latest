@@ -134,154 +134,194 @@ def create_bar_chart(categories, scores, max_score=5):
         print(f"Error creating bar chart: {str(e)}")
         return None
 
-def generate_pdf_report(assessment, user, assessment_info, category_scores):
-    # Create directory if it doesn't exist
-    output_dir = os.path.join('app', 'static', 'reports')
-    os.makedirs(output_dir, exist_ok=True)
-    
-    # Generate unique filename
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    filename = f"{user.name}_{assessment['name']}_{timestamp}.pdf"
-    filepath = os.path.join(output_dir, filename)
-    
-    # Create the PDF document with custom margins
-    doc = SimpleDocTemplate(
-        filepath,
-        pagesize=letter,
-        rightMargin=72,
-        leftMargin=72,
-        topMargin=72,
-        bottomMargin=72
-    )
-    
-    styles = getSampleStyleSheet()
-    story = []
-    
-    # Custom styles
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=24,
-        spaceAfter=30,
-        alignment=1  # Center alignment
-    )
-    
-    heading_style = ParagraphStyle(
-        'CustomHeading',
-        parent=styles['Heading2'],
-        fontSize=16,
-        spaceBefore=20,
-        spaceAfter=12,
-        textColor=HexColor('#333333')
-    )
-    
-    normal_style = ParagraphStyle(
-        'CustomNormal',
-        parent=styles['Normal'],
-        fontSize=12,
-        spaceBefore=6,
-        spaceAfter=6,
-        leading=16
-    )
-    
-    # Title
-    story.append(Paragraph(f"{assessment['name']} Assessment Results", title_style))
-    
-    # Basic Information
-    story.append(Paragraph("Assessment Information", heading_style))
-    story.append(Paragraph(f"<b>Name:</b> {user.name}", normal_style))
-    story.append(Paragraph(f"<b>Date:</b> {datetime.now().strftime('%B %d, %Y')}", normal_style))
-    story.append(Paragraph(f"<b>Email:</b> {user.email if hasattr(user, 'email') else 'N/A'}", normal_style))
-    story.append(Spacer(1, 20))
-    
-    # Assessment Description
-    story.append(Paragraph("Assessment Description", heading_style))
-    story.append(Paragraph(assessment_info['description'], normal_style))
-    story.append(Spacer(1, 20))
-    
-    # Category Scores
-    story.append(Paragraph("Category Scores", heading_style))
-    
-    # Create table data
-    table_data = [['Category', 'Score']]
-    categories = []
-    scores = []
-    for category, score in category_scores.items():
-        formatted_category = category.replace('_', ' ').title()
-        table_data.append([formatted_category, f"{score:.2f}"])
-        categories.append(formatted_category)
-        scores.append(score)
-    
-    # Calculate overall average
-    overall_score = sum(category_scores.values()) / len(category_scores)
-    table_data.append(['Overall Average', f"{overall_score:.2f}"])
-    
-    # Create and style the table
-    table = Table(table_data, colWidths=[4*inch, 2*inch])
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), HexColor('#4A4A4A')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 14),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, -1), (-1, -1), HexColor('#E8E8E8')),
-        ('TEXTCOLOR', (0, -1), (-1, -1), colors.black),
-        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, -1), (-1, -1), 12),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -2), [HexColor('#FFFFFF'), HexColor('#F5F5F5')]),
-    ]))
-    
-    story.append(table)
-    story.append(Spacer(1, 30))
-    
-    # Add visualizations
-    story.append(Paragraph("Visual Representation", heading_style))
-    
-    # Create and add radar chart
-    radar_buffer = create_radar_chart(categories, scores)
-    if radar_buffer:
-        radar_img = Image(radar_buffer, width=6*inch, height=6*inch)
-        story.append(radar_img)
-    
-    story.append(PageBreak())
-    
-    # Create and add bar chart
-    bar_buffer = create_bar_chart(categories, scores)
-    if bar_buffer:
-        bar_img = Image(bar_buffer, width=7*inch, height=4*inch)
-        story.append(bar_img)
-    
-    story.append(Spacer(1, 30))
-    
-    # Interpretation
-    story.append(Paragraph("Score Interpretation", heading_style))
-    interpretation = get_score_interpretation(overall_score)
-    story.append(Paragraph(interpretation, normal_style))
-    
-    # Recommendations section
-    story.append(Paragraph("Recommendations", heading_style))
-    recommendations = get_recommendations(category_scores)
-    for rec in recommendations:
-        story.append(Paragraph(f"• {rec}", normal_style))
-    
-    # Build the PDF
-    doc.build(story)
-    
-    return f"/static/reports/{filename}"
+def generate_pdf_report(assessment, user, assessment_info, category_scores, interpretation):
+    """Generate a PDF report for the assessment results."""
+    try:
+        # Create directory if it doesn't exist
+        output_dir = os.path.join(current_app.root_path, 'static', 'pdfs')
+        os.makedirs(output_dir, exist_ok=True)
+        print(f"PDF output directory: {output_dir}")
+        
+        # Use predefined abbreviations for assessment types
+        assessment_abbreviations = {
+            'lsi': 'LSI',
+            'oci': 'OCI',
+            'lpi': 'LPI',
+            'influence': 'ISP'
+        }
+        
+        # Get the correct abbreviation or fallback to cleaned name if not found
+        assessment_abbr = assessment_abbreviations.get(assessment.assessment_type)
+        if not assessment_abbr:
+            # Fallback to previous logic if type not found
+            clean_name = (assessment_info['name']
+                         .replace('(', '')
+                         .replace(')', '')
+                         .replace('Leadership', '')
+                         .strip())
+            assessment_abbr = ''.join(word[0].upper() for word in clean_name.split())
+            
+        timestamp = datetime.now().strftime('%d%b%y')  # Format: 30Apr25
+        filename = f"{assessment_abbr}_{timestamp}.pdf"
+        filepath = os.path.join(output_dir, filename)
+        print(f"Generating PDF at: {filepath}")
+        
+        # Create the PDF document with A4 size and custom margins
+        doc = SimpleDocTemplate(
+            filepath,
+            pagesize=A4,
+            rightMargin=30*mm,
+            leftMargin=30*mm,
+            topMargin=30*mm,
+            bottomMargin=30*mm
+        )
+        
+        styles = getSampleStyleSheet()
+        story = []
+        
+        # Custom styles
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            spaceAfter=10*mm,
+            alignment=1,  # Center alignment
+            textColor=HexColor('#333333')
+        )
+        
+        heading_style = ParagraphStyle(
+            'CustomHeading',
+            parent=styles['Heading2'],
+            fontSize=14,
+            spaceBefore=8*mm,
+            spaceAfter=4*mm,
+            textColor=HexColor('#444444')
+        )
+        
+        normal_style = ParagraphStyle(
+            'CustomNormal',
+            parent=styles['Normal'],
+            fontSize=11,
+            spaceBefore=2*mm,
+            spaceAfter=2*mm,
+            leading=14,
+            textColor=HexColor('#333333')
+        )
+        
+        # Title with assessment name
+        story.append(Paragraph(assessment_info['name'], title_style))
+        
+        # User Information Table
+        user_data = [
+            ["Name:", user.name],
+            ["Date:", assessment.completed_at.strftime('%B %d, %Y')],
+            ["Email:", user.email if hasattr(user, 'email') else 'N/A']
+        ]
+        
+        user_table = Table(user_data, colWidths=[80, 300])
+        user_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 11),
+            ('TEXTCOLOR', (0, 0), (-1, -1), HexColor('#333333')),
+            ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
+            ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ]))
+        story.append(user_table)
+        story.append(Spacer(1, 10*mm))
+        
+        # Results visualization - always use the same type as specified in assessment_info
+        visualization_type = assessment_info.get('visualization', 'radar')  # Default to radar if not specified
+        print(f"Using visualization type: {visualization_type}")
+        
+        if visualization_type == 'radar':
+            chart_buffer = create_radar_chart(
+                list(category_scores.keys()),
+                list(category_scores.values()),
+                assessment_info['max_score']
+            )
+        else:  # bar chart
+            chart_buffer = create_bar_chart(
+                list(category_scores.keys()),
+                list(category_scores.values()),
+                assessment_info['max_score']
+            )
+            
+        if chart_buffer:
+            img = Image(chart_buffer)
+            # Adjust size based on chart type
+            if visualization_type == 'radar':
+                img.drawHeight = 140*mm  # Make radar chart slightly larger
+                img.drawWidth = 140*mm
+            else:
+                img.drawHeight = 120*mm
+                img.drawWidth = 160*mm
+            story.append(img)
+        
+        story.append(Spacer(1, 5*mm))
+        
+        # Category Scores Table
+        story.append(Paragraph("Detailed Scores", heading_style))
+        data = [["Category", "Score"]]
+        for category, score in category_scores.items():
+            category_name = category.replace('_', ' ').title()
+            data.append([
+                category_name,
+                f"{score:.1f}"
+            ])
+        
+        table = Table(data, colWidths=[300, 100])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), HexColor('#444444')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 11),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+            ('TEXTCOLOR', (0, 1), (-1, -1), HexColor('#333333')),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 11),
+            ('GRID', (0, 0), (-1, -1), 1, colors.lightgrey),
+            ('ALIGN', (1, 0), (1, -1), 'CENTER'),
+        ]))
+        story.append(table)
+        
+        # Assessment Interpretation
+        story.append(Spacer(1, 10*mm))
+        story.append(Paragraph("Your Assessment Insight", heading_style))
+        story.append(Paragraph(interpretation, normal_style))
+        
+        # Build the PDF
+        doc.build(story)
+        
+        # Verify the file was created
+        if os.path.exists(filepath):
+            print(f"PDF report generated successfully at {filepath}")
+            print(f"File size: {os.path.getsize(filepath)} bytes")
+            return filename  # Return just the filename, not the full path
+        else:
+            print(f"Error: PDF file not found after generation at {filepath}")
+            return None
+        
+    except Exception as e:
+        print(f"Error generating PDF report: {str(e)}")
+        return None
 
 def get_score_interpretation(score):
+    """Get a concise interpretation of the score."""
     if score >= 4.5:
-        return "Excellent: You demonstrate exceptional understanding and capability in this area."
+        return "Outstanding performance with demonstrated mastery"
     elif score >= 3.5:
-        return "Good: You show strong competency with room for some improvement."
+        return "Strong competency with some areas for enhancement"
     elif score >= 2.5:
-        return "Average: You have a basic understanding but there's significant room for development."
+        return "Satisfactory with room for development"
     elif score >= 1.5:
-        return "Below Average: You may benefit from focused attention and improvement in this area."
+        return "Basic understanding, needs improvement"
     else:
-        return "Needs Improvement: Consider seeking additional support and resources in this area."
+        return "Requires significant development"
 
 def get_recommendations(category_scores):
     """Generate specific recommendations based on category scores."""

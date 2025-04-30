@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify, send_file
+from flask import Blueprint, render_template, request, jsonify, send_file, current_app, redirect, url_for
 from flask_wtf import FlaskForm
 from wtforms import StringField, IntegerField, SubmitField
 from wtforms.validators import DataRequired
@@ -6,13 +6,14 @@ import json
 import os
 from datetime import datetime
 from app.utils.pdf_generator import generate_pdf_report
-from flask_login import current_user
+from flask_login import current_user, login_required
 
 bp = Blueprint('main', __name__)
 
-# Load assessment data
-with open('data/assessments.json', 'r') as f:
-    assessments = json.load(f)
+def load_assessments():
+    data_path = os.path.join(current_app.root_path, '..', 'data', 'assessments.json')
+    with open(data_path, 'r') as f:
+        return json.load(f)
 
 class UserForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired()])
@@ -24,16 +25,13 @@ class AssessmentForm(FlaskForm):
 
 @bp.route('/', methods=['GET', 'POST'])
 def home():
-    form = UserForm()
-    if form.validate_on_submit():
-        return render_template('assessments.html', 
-                            name=form.name.data, 
-                            age=form.age.data,
-                            assessments=assessments)
-    return render_template('home.html', form=form)
+    """Home page route."""
+    return render_template('main/index.html')
 
 @bp.route('/assessment/<assessment_id>', methods=['GET', 'POST'])
+@login_required
 def assessment(assessment_id):
+    assessments = load_assessments()
     assessment = next((a for a in assessments if a['id'] == assessment_id), None)
     if not assessment:
         return "Assessment not found", 404
@@ -53,7 +51,9 @@ def assessment(assessment_id):
                         age=request.args.get('age'))
 
 @bp.route('/download/<assessment_id>')
+@login_required
 def download_results(assessment_id):
+    assessments = load_assessments()
     assessment = next((a for a in assessments if a['id'] == assessment_id), None)
     if not assessment:
         return "Assessment not found", 404
@@ -89,4 +89,28 @@ def download_results(assessment_id):
     )
 
 def calculate_score(assessment_id, responses):
-    return sum(int(score) for score in responses.values()) / len(responses) 
+    assessments = load_assessments()
+    assessment = next((a for a in assessments if a['id'] == assessment_id), None)
+    if not assessment:
+        return None
+    
+    category_scores = {}
+    for question in assessment['questions']:
+        category = question.get('category', 'general')
+        weight = float(question.get('weight', 1.0))
+        response = float(responses.get(question['id'], 0))
+        
+        if category not in category_scores:
+            category_scores[category] = {'total': 0, 'weight': 0}
+        
+        category_scores[category]['total'] += response * weight
+        category_scores[category]['weight'] += weight
+    
+    # Calculate weighted average for each category
+    for category in category_scores:
+        if category_scores[category]['weight'] > 0:
+            category_scores[category]['score'] = category_scores[category]['total'] / category_scores[category]['weight']
+        else:
+            category_scores[category]['score'] = 0
+    
+    return category_scores 

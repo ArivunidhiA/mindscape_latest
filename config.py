@@ -34,4 +34,21 @@ class Config:
         
         # Ensure the database directory exists
         db_dir = app_dir
-        db_dir.mkdir(exist_ok=True) 
+        db_dir.mkdir(exist_ok=True)
+
+class DevelopmentConfig(Config):
+    DEBUG = True
+    DEVELOPMENT = True
+    # More permissive CORS settings for local development
+    CORS_HEADERS = 'Content-Type'
+    # Use a simpler secret key for development
+    SECRET_KEY = 'dev'
+    # Use the same database file as production for development
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + str(basedir / 'app.db')
+    # Disable email configuration for development
+    MAIL_SERVER = None
+    
+config = {
+    'development': DevelopmentConfig,
+    'default': Config
+} 

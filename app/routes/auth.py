@@ -9,21 +9,21 @@ bp = Blueprint('auth', __name__)
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
+        return redirect(url_for('assessment.take_assessment'))
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user and user.check_password(form.password.data):
             login_user(user, remember=form.remember_me.data)
             next_page = request.args.get('next')
-            return redirect(next_page or url_for('main.index'))
+            return redirect(next_page or url_for('assessment.take_assessment'))
         flash('Invalid email or password', 'error')
     return render_template('auth/login.html', form=form)
 
 @bp.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
+        return redirect(url_for('assessment.take_assessment'))
     form = RegistrationForm()
     if form.validate_on_submit():
         user = User(
@@ -43,4 +43,4 @@ def register():
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('main.index')) 
+    return redirect(url_for('main.home')) 

@@ -42,14 +42,35 @@ cp .env.example .env
 # Edit .env with your configurations
 ```
 
-5. Initialize the database:
+5. Initialize the database and seed initial data:
 ```bash
-python init_db.py
+python seed_db.py
 ```
 
 6. Run the development server:
 ```bash
-flask run
+python run.py
+```
+
+The application will be available at http://localhost:5000 with:
+- Debug mode enabled
+- Auto-reload on code changes
+- Development database (dev.db)
+- Development-specific configurations
+
+## Project Structure
+
+```
+mindscape/
+├── app/               # Application package
+│   ├── models/       # Database models
+│   ├── routes/       # Route handlers
+│   ├── templates/    # HTML templates
+│   ├── static/       # Static files (CSS, JS, images)
+│   └── utils/        # Utility functions
+├── config.py         # Configuration settings
+├── run.py           # Development server script
+└── seed_db.py       # Database initialization script
 ```
 
 ## Deployment

@@ -17,16 +17,11 @@
                 <div class="glass-card p-6 rounded-lg shadow-xl bg-gray-800 bg-opacity-50 hover:transform hover:scale-105 transition-all duration-300 flex flex-col h-full">
                     <div class="flex justify-between items-start mb-4">
                         <h3 class="text-2xl font-semibold text-white">{{ assessment.name }}</h3>
-                        <span class="text-sm text-gray-400">~{{ assessment.duration }} mins</span>
+                        <span class="text-sm text-purple-400 bg-purple-500 bg-opacity-20 px-3 py-1 rounded-full">
+                            {{ assessment.duration }} mins
+                        </span>
                     </div>
                     <p class="text-gray-300 mb-6 flex-grow">{{ assessment.description }}</p>
-                    <div class="flex flex-wrap gap-2 mb-6">
-                        {% for category in assessment.categories %}
-                        <span class="px-3 py-1 rounded-full text-xs bg-purple-500 bg-opacity-20 text-purple-300">
-                            {{ category|replace('_', ' ')|title }}
-                        </span>
-                        {% endfor %}
-                    </div>
                     <div class="flex justify-end mt-auto">
                         <a href="{{ url_for('assessment.assessment_type', assessment_type=assessment_key) }}" 
                            class="btn-primary bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-2 rounded-lg transition-colors duration-200">

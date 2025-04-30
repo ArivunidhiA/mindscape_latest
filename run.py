@@ -1,8 +1,12 @@
 from app import create_app
 import os
+from config import config
 
-app = create_app()
+# Create app with development config by default
+app = create_app(config['development'])
 
 if __name__ == '__main__':
+    # Use localhost and port 5000 by default for local development
+    host = os.environ.get('HOST', 'localhost')
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port) 
+    app.run(host=host, port=port, debug=True) 

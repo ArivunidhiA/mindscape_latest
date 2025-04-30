@@ -5,6 +5,7 @@ from app.models.assessment import Question, Assessment, AssessmentResponse, ASSE
 from app import db
 from datetime import datetime
 from app.utils.pdf_generator import generate_pdf_report
+from app.utils.interpretation import get_assessment_interpretation
 import os
 from threading import Thread
 import json
@@ -38,13 +39,36 @@ def take_assessment():
 @login_required
 def assessment_type(assessment_type):
     """Display the questions for a specific assessment type."""
+    print(f"\n=== Assessment Route Debug ===")
+    print(f"Requested assessment type: {assessment_type}")
+    print(f"Available assessment types: {list(ASSESSMENT_TYPES.keys())}")
+    
     # Validate assessment type
     if assessment_type not in ASSESSMENT_TYPES:
         flash('Invalid assessment type selected.', 'error')
         return redirect(url_for('assessment.take_assessment'))
     
+    # Debug database session
+    print("\nDatabase Session Info:")
+    print(f"Session is active: {db.session.is_active}")
+    print(f"Session has changes: {db.session.dirty}")
+    
     # Get questions for the specific assessment type
     questions = Question.query.filter_by(assessment_type=assessment_type).all()
+    print(f"\nQuery Results:")
+    print(f"Found {len(questions)} questions for assessment type {assessment_type}")
+    
+    # Print out the questions for debugging
+    print("\nQuestions in database:")
+    for q in questions:
+        print(f"ID: {q.id}, Text: {q.text}, Category: {q.category}")
+    
+    # Verify database connection
+    try:
+        total_questions = Question.query.count()
+        print(f"\nTotal questions in database: {total_questions}")
+    except Exception as e:
+        print(f"Error querying database: {str(e)}")
     
     if not questions:
         flash(f'No questions available for the {ASSESSMENT_TYPES[assessment_type]["name"]} assessment.', 'error')
@@ -61,20 +85,27 @@ def assessment_type(assessment_type):
 @login_required
 def submit_assessment(assessment_type):
     """Handle assessment submission for a specific type."""
+    print(f"\n=== Submit Assessment Debug ===")
+    print(f"Assessment type: {assessment_type}")
+    
     # Validate assessment type
     if assessment_type not in ASSESSMENT_TYPES:
+        print("Invalid assessment type")
         flash('Invalid assessment type selected.', 'error')
         return redirect(url_for('assessment.take_assessment'))
     
     form = AssessmentForm()
     if not form.validate_on_submit():
+        print("Form validation failed")
         flash('Invalid form submission. Please try again.', 'error')
         return redirect(url_for('assessment.assessment_type', assessment_type=assessment_type))
     
     if not request.form:
+        print("No form data submitted")
         flash('No responses were submitted.', 'error')
         return redirect(url_for('assessment.assessment_type', assessment_type=assessment_type))
     
+    print("Creating new assessment")
     # Create new assessment
     assessment = Assessment(
         user_id=current_user.id,
@@ -83,12 +114,16 @@ def submit_assessment(assessment_type):
     )
     db.session.add(assessment)
     db.session.flush()  # Get the assessment ID
+    print(f"Created assessment with ID: {assessment.id}")
     
     # Process each question response
     questions = Question.query.filter_by(assessment_type=assessment_type).all()
+    print(f"Processing {len(questions)} questions")
+    
     for question in questions:
         response_key = f'question_{question.id}'
         if response_key not in request.form:
+            print(f"Missing response for question {question.id}")
             flash('Please answer all questions.', 'error')
             return redirect(url_for('assessment.assessment_type', assessment_type=assessment_type))
         
@@ -97,7 +132,9 @@ def submit_assessment(assessment_type):
             max_score = ASSESSMENT_TYPES[assessment_type]['max_score']
             if not 1 <= score <= max_score:
                 raise ValueError
+            print(f"Question {question.id} score: {score}")
         except ValueError:
+            print(f"Invalid score value for question {question.id}")
             flash('Invalid response value provided.', 'error')
             return redirect(url_for('assessment.assessment_type', assessment_type=assessment_type))
         
@@ -110,10 +147,13 @@ def submit_assessment(assessment_type):
         db.session.add(response)
     
     try:
+        print("Committing responses to database")
         db.session.commit()
+        print("Successfully saved assessment")
         flash('Assessment completed successfully!', 'success')
         return redirect(url_for('assessment.results', assessment_id=assessment.id))
     except Exception as e:
+        print(f"Error saving assessment: {str(e)}")
         db.session.rollback()
         flash('An error occurred while saving your responses. Please try again.', 'error')
         return redirect(url_for('assessment.assessment_type', assessment_type=assessment_type))
@@ -121,19 +161,9 @@ def submit_assessment(assessment_type):
 def generate_pdf_async(assessment, user, assessment_info, category_scores):
     """Generate PDF report in a background thread."""
     try:
-        # Create static/pdfs directory if it doesn't exist
-        pdf_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'pdfs')
-        os.makedirs(pdf_dir, exist_ok=True)
-        
         # Generate the PDF report
-        pdf_path = generate_pdf_report(assessment, current_user, assessment_info, category_scores)
-        
-        if pdf_path:
-            # Verify the file exists
-            full_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', pdf_path.lstrip('/'))
-            if not os.path.exists(full_path):
-                return None
-            return pdf_path
+        pdf_path = generate_pdf_report(assessment, user, assessment_info, category_scores)
+        return pdf_path
     except Exception as e:
         print(f"Error in async PDF generation: {str(e)}")
         return None
@@ -178,35 +208,34 @@ def results(assessment_id):
                     2
                 )
 
+        # Generate interpretation
+        interpretation = get_assessment_interpretation(assessment.assessment_type, category_scores)
+
         # Generate PDF report
-        pdf_path = generate_pdf_report(
-            assessment=assessment,
-            user=current_user,
-            assessment_info=assessment_info,
-            category_scores=category_scores
-        )
-        
-        if pdf_path:
-            # Verify the PDF file exists
-            pdf_file = os.path.join(current_app.root_path, pdf_path.lstrip('/'))
-            if not os.path.exists(pdf_file):
-                print(f"PDF file not found at {pdf_file}")
-                pdf_path = None
-            else:
-                # Get just the filename for the download route
-                pdf_path = os.path.basename(pdf_file)
+        pdf_filename = None
+        try:
+            pdf_filename = generate_pdf_report(
+                assessment=assessment,
+                user=current_user,
+                assessment_info=assessment_info,
+                category_scores=category_scores,
+                interpretation=interpretation
+            )
+        except Exception as e:
+            print(f"Error generating PDF: {str(e)}")
 
         return render_template(
             'assessment/results.html',
             assessment=assessment,
-            category_scores=category_scores,
             assessment_info=assessment_info,
-            pdf_path=pdf_path
+            category_scores=category_scores,
+            interpretation=interpretation,
+            pdf_filename=pdf_filename
         )
 
     except Exception as e:
-        print(f"Error in results route: {str(e)}")
-        flash('An error occurred while generating the results.', 'error')
+        print(f"Error displaying results: {str(e)}")
+        flash('An error occurred while displaying the results.', 'error')
         return redirect(url_for('assessment.history'))
 
 @bp.route('/api/pdf_status/<int:assessment_id>')
@@ -279,23 +308,60 @@ def api_results(assessment_id):
 @bp.route('/download/<path:filename>')
 @login_required
 def download_pdf(filename):
-    """Download PDF report."""
+    """Download a PDF report."""
     try:
-        # Security check - ensure filename is a PDF
-        if not filename.endswith('.pdf'):
-            flash('Invalid file request.', 'error')
+        # Security check: ensure filename only contains safe characters
+        if not filename or '..' in filename:
+            flash('Invalid filename.', 'error')
             return redirect(url_for('assessment.history'))
             
-        # Get full path
+        # Construct the full path
         pdf_dir = os.path.join(current_app.root_path, 'static', 'pdfs')
         file_path = os.path.join(pdf_dir, filename)
         
-        # Security check - ensure file exists and is within pdfs directory
-        if not os.path.exists(file_path) or not os.path.commonpath([file_path, pdf_dir]) == pdf_dir:
-            flash('File not found.', 'error')
+        # Debug logging
+        print(f"Attempting to download PDF: {file_path}")
+        print(f"File exists: {os.path.exists(file_path)}")
+        
+        # Verify file exists and is in the correct directory
+        if not os.path.exists(file_path):
+            print(f"PDF file not found at path: {file_path}")
+            flash('PDF file not found.', 'error')
             return redirect(url_for('assessment.history'))
             
-        # Send the file
+        if not os.path.commonpath([file_path, pdf_dir]) == pdf_dir:
+            print(f"Security check failed: file path {file_path} is outside pdf_dir {pdf_dir}")
+            flash('Invalid file path.', 'error')
+            return redirect(url_for('assessment.history'))
+            
+        # Get the assessment ID from the filename
+        try:
+            # Handle both old and new filename formats
+            if '_' in filename:
+                if filename.startswith('assessment_report_'):
+                    assessment_id = int(filename.split('_')[2])
+                else:
+                    # New format: LSI_28Apr25.pdf
+                    return send_file(
+                        file_path,
+                        mimetype='application/pdf',
+                        as_attachment=True,
+                        download_name=filename
+                    )
+                    
+                assessment = Assessment.query.get_or_404(assessment_id)
+                
+                # Check if user has permission to download this PDF
+                if assessment.user_id != current_user.id:
+                    flash('You do not have permission to download this file.', 'error')
+                    return redirect(url_for('assessment.history'))
+            
+        except (ValueError, IndexError) as e:
+            print(f"Error parsing filename: {str(e)}")
+            # Don't redirect - try to send the file anyway if it exists
+            pass
+            
+        print(f"Sending file: {file_path}")
         return send_file(
             file_path,
             mimetype='application/pdf',
@@ -305,5 +371,5 @@ def download_pdf(filename):
         
     except Exception as e:
         print(f"Error downloading PDF: {str(e)}")
-        flash('Error downloading file.', 'error')
+        flash('An error occurred while downloading the PDF.', 'error')
         return redirect(url_for('assessment.history')) 
