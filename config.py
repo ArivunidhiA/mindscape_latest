@@ -19,6 +19,8 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'app.db'))
     if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
         SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgres://", "postgresql://", 1)
+    if SQLALCHEMY_DATABASE_URI and 'postgresql://' in SQLALCHEMY_DATABASE_URI:
+        SQLALCHEMY_DATABASE_URI += "?sslmode=require"
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
