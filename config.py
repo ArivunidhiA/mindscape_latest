@@ -16,11 +16,14 @@ class Config:
     PREFERRED_URL_SCHEME = 'https'  # Required for production
     
     # Database settings
-    url = os.getenv("DATABASE_URL", 'sqlite:///' + os.path.join(basedir, 'app.db'))
-    url = url.replace("postgres://", "postgresql://")
-    if "sslmode" not in url and "postgresql://" in url:
-        url += "?sslmode=require"
-    SQLALCHEMY_DATABASE_URI = url
+    # Temporarily using hardcoded connection string for testing
+    SQLALCHEMY_DATABASE_URI = "postgresql://mindscape_db_user:sadqzRMwqUoz2wCDxdsav2ohYdmFKw1d@dpg-d06tuc1r0fns73807cq0-a/mindscape_db?sslmode=require"
+    # Original environment-based logic (commented out for testing):
+    # url = os.getenv("DATABASE_URL", 'sqlite:///' + os.path.join(basedir, 'app.db'))
+    # url = url.replace("postgres://", "postgresql://")
+    # if "sslmode" not in url and "postgresql://" in url:
+    #     url += "?sslmode=require"
+    # SQLALCHEMY_DATABASE_URI = url
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
