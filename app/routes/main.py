@@ -7,6 +7,8 @@ import os
 from datetime import datetime
 from app.utils.pdf_generator import generate_pdf_report
 from flask_login import current_user, login_required
+from app.models.assessment import Question
+from seed_db import seed_questions
 
 bp = Blueprint('main', __name__)
 
@@ -113,4 +115,11 @@ def calculate_score(assessment_id, responses):
         else:
             category_scores[category]['score'] = 0
     
-    return category_scores 
+    return category_scores
+
+@bp.route('/seed')
+def seed_database():
+    if Question.query.count() == 0:
+        seed_questions()
+        return "✅ Questions seeded successfully."
+    return "⚠️ Questions already exist. Seeding skipped." 
