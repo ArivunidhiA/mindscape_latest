@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import secrets
 from dotenv import load_dotenv
+import logging
 
 # Get the absolute path to the flask-app directory
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -16,14 +17,11 @@ class Config:
     PREFERRED_URL_SCHEME = 'https'  # Required for production
     
     # Database settings
-    # Temporarily using hardcoded connection string for testing
-    SQLALCHEMY_DATABASE_URI = "postgresql://mindscape_db_user:sadqzRMwqUoz2wCDxdsav2ohYdmFKw1d@dpg-d06tuc1r0fns73807cq0-a/mindscape_db?sslmode=require"
-    # Original environment-based logic (commented out for testing):
-    # url = os.getenv("DATABASE_URL", 'sqlite:///' + os.path.join(basedir, 'app.db'))
-    # url = url.replace("postgres://", "postgresql://")
-    # if "sslmode" not in url and "postgresql://" in url:
-    #     url += "?sslmode=require"
-    # SQLALCHEMY_DATABASE_URI = url
+    url = os.getenv("DATABASE_URL", 'sqlite:///' + os.path.join(basedir, 'app.db'))
+    url = url.replace("postgres://", "postgresql://")
+    if "sslmode" not in url and "postgresql://" in url:
+        url += "?sslmode=require"
+    SQLALCHEMY_DATABASE_URI = url
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
@@ -44,6 +42,9 @@ class Config:
         # Ensure the database directory exists
         db_dir = app_dir
         db_dir.mkdir(exist_ok=True)
+        
+        # Log the final database URI
+        logging.info(f"Initializing app with database URI: {Config.SQLALCHEMY_DATABASE_URI}")
 
 class DevelopmentConfig(Config):
     DEBUG = True
