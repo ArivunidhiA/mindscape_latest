@@ -30,6 +30,14 @@ class Assessment(db.Model):
         if not category_responses:
             return 0.0
         return sum(r.score for r in category_responses) / len(category_responses)
+        
+    def get_all_category_scores(self):
+        """Calculate scores for all categories in this assessment type."""
+        scores = {}
+        categories = ASSESSMENT_TYPES[self.assessment_type]['categories']
+        for category in categories:
+            scores[category] = self.get_category_score(category)
+        return scores
 
 class AssessmentResponse(db.Model):
     """Individual response to an assessment question."""
