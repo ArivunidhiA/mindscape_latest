@@ -2,10 +2,19 @@ from datetime import datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db, login_manager
+from sqlalchemy.exc import OperationalError
+import logging
 
 @login_manager.user_loader
 def load_user(id):
-    return db.session.get(User, int(id))
+    try:
+        return db.session.get(User, int(id))
+    except OperationalError as e:
+        logging.error(f"Database error in load_user: {str(e)}")
+        return None
+    except Exception as e:
+        logging.error(f"Unexpected error in load_user: {str(e)}")
+        return None
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)

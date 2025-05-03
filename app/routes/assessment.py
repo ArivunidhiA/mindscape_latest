@@ -10,6 +10,7 @@ import os
 from threading import Thread
 import json
 from flask import current_app
+import logging
 
 bp = Blueprint('assessment', __name__)
 
@@ -39,121 +40,94 @@ def take_assessment():
 @login_required
 def assessment_type(assessment_type):
     """Display the questions for a specific assessment type."""
-    print(f"\n=== Assessment Route Debug ===")
-    print(f"Requested assessment type: {assessment_type}")
-    print(f"Available assessment types: {list(ASSESSMENT_TYPES.keys())}")
+    logging.info(f"Requested assessment type: {assessment_type}")
     
     # Validate assessment type
     if assessment_type not in ASSESSMENT_TYPES:
         flash('Invalid assessment type selected.', 'error')
         return redirect(url_for('assessment.take_assessment'))
     
-    # Debug database session
-    print("\nDatabase Session Info:")
-    print(f"Session is active: {db.session.is_active}")
-    print(f"Session has changes: {db.session.dirty}")
-    
-    # Get questions for the specific assessment type
-    questions = Question.query.filter_by(assessment_type=assessment_type).all()
-    print(f"\nQuery Results:")
-    print(f"Found {len(questions)} questions for assessment type {assessment_type}")
-    
-    # Print out the questions for debugging
-    print("\nQuestions in database:")
-    for q in questions:
-        print(f"ID: {q.id}, Text: {q.text}, Category: {q.category}")
-    
-    # Verify database connection
     try:
-        total_questions = Question.query.count()
-        print(f"\nTotal questions in database: {total_questions}")
+        # Get questions for the specific assessment type in a single query
+        questions = Question.query.filter_by(assessment_type=assessment_type).all()
+        
+        if not questions:
+            flash(f'No questions available for the {ASSESSMENT_TYPES[assessment_type]["name"]} assessment.', 'error')
+            return redirect(url_for('assessment.take_assessment'))
+        
+        form = AssessmentForm()
+        return render_template('assessment/questions.html', 
+                             questions=questions, 
+                             form=form, 
+                             assessment_type=assessment_type,
+                             assessment_info=ASSESSMENT_TYPES[assessment_type])
     except Exception as e:
-        print(f"Error querying database: {str(e)}")
-    
-    if not questions:
-        flash(f'No questions available for the {ASSESSMENT_TYPES[assessment_type]["name"]} assessment.', 'error')
+        logging.error(f"Error in assessment_type route: {str(e)}")
+        flash('An error occurred while loading the assessment.', 'error')
         return redirect(url_for('assessment.take_assessment'))
-    
-    form = AssessmentForm()
-    return render_template('assessment/questions.html', 
-                         questions=questions, 
-                         form=form, 
-                         assessment_type=assessment_type,
-                         assessment_info=ASSESSMENT_TYPES[assessment_type])
 
 @bp.route('/submit/<assessment_type>', methods=['POST'])
 @login_required
 def submit_assessment(assessment_type):
     """Handle assessment submission for a specific type."""
-    print(f"\n=== Submit Assessment Debug ===")
-    print(f"Assessment type: {assessment_type}")
+    logging.info(f"Processing assessment submission for type: {assessment_type}")
     
     # Validate assessment type
     if assessment_type not in ASSESSMENT_TYPES:
-        print("Invalid assessment type")
         flash('Invalid assessment type selected.', 'error')
         return redirect(url_for('assessment.take_assessment'))
     
     form = AssessmentForm()
     if not form.validate_on_submit():
-        print("Form validation failed")
         flash('Invalid form submission. Please try again.', 'error')
         return redirect(url_for('assessment.assessment_type', assessment_type=assessment_type))
     
     if not request.form:
-        print("No form data submitted")
         flash('No responses were submitted.', 'error')
         return redirect(url_for('assessment.assessment_type', assessment_type=assessment_type))
     
-    print("Creating new assessment")
-    # Create new assessment
-    assessment = Assessment(
-        user_id=current_user.id,
-        assessment_type=assessment_type,
-        completed_at=datetime.utcnow()
-    )
-    db.session.add(assessment)
-    db.session.flush()  # Get the assessment ID
-    print(f"Created assessment with ID: {assessment.id}")
-    
-    # Process each question response
-    questions = Question.query.filter_by(assessment_type=assessment_type).all()
-    print(f"Processing {len(questions)} questions")
-    
-    for question in questions:
-        response_key = f'question_{question.id}'
-        if response_key not in request.form:
-            print(f"Missing response for question {question.id}")
-            flash('Please answer all questions.', 'error')
-            return redirect(url_for('assessment.assessment_type', assessment_type=assessment_type))
-        
-        try:
-            score = int(request.form[response_key])
-            max_score = ASSESSMENT_TYPES[assessment_type]['max_score']
-            if not 1 <= score <= max_score:
-                raise ValueError
-            print(f"Question {question.id} score: {score}")
-        except ValueError:
-            print(f"Invalid score value for question {question.id}")
-            flash('Invalid response value provided.', 'error')
-            return redirect(url_for('assessment.assessment_type', assessment_type=assessment_type))
-        
-        # Save the response
-        response = AssessmentResponse(
-            assessment_id=assessment.id,
-            question_id=question.id,
-            score=score
-        )
-        db.session.add(response)
-    
     try:
-        print("Committing responses to database")
+        # Create new assessment
+        assessment = Assessment(
+            user_id=current_user.id,
+            assessment_type=assessment_type,
+            completed_at=datetime.utcnow()
+        )
+        db.session.add(assessment)
+        db.session.flush()
+        
+        # Get all questions in a single query
+        questions = Question.query.filter_by(assessment_type=assessment_type).all()
+        
+        # Process responses in a single transaction
+        for question in questions:
+            response_key = f'question_{question.id}'
+            if response_key not in request.form:
+                flash('Please answer all questions.', 'error')
+                return redirect(url_for('assessment.assessment_type', assessment_type=assessment_type))
+            
+            try:
+                score = int(request.form[response_key])
+                max_score = ASSESSMENT_TYPES[assessment_type]['max_score']
+                if not 1 <= score <= max_score:
+                    raise ValueError
+                
+                response = AssessmentResponse(
+                    assessment_id=assessment.id,
+                    question_id=question.id,
+                    score=score
+                )
+                db.session.add(response)
+            except ValueError:
+                flash('Invalid response value provided.', 'error')
+                return redirect(url_for('assessment.assessment_type', assessment_type=assessment_type))
+        
         db.session.commit()
-        print("Successfully saved assessment")
         flash('Assessment completed successfully!', 'success')
         return redirect(url_for('assessment.results', assessment_id=assessment.id))
+        
     except Exception as e:
-        print(f"Error saving assessment: {str(e)}")
+        logging.error(f"Error in submit_assessment: {str(e)}")
         db.session.rollback()
         flash('An error occurred while saving your responses. Please try again.', 'error')
         return redirect(url_for('assessment.assessment_type', assessment_type=assessment_type))

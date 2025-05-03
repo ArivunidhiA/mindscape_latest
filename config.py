@@ -17,11 +17,28 @@ class Config:
     PREFERRED_URL_SCHEME = 'https'  # Required for production
     
     # Database settings
-    url = os.environ.get("DATABASE_URL", 'sqlite:///' + os.path.join(basedir, 'app.db'))
-    url = url.replace("postgres://", "postgresql://")
-    if "sslmode" not in url and "postgresql://" in url:
-        url += "?sslmode=require"
-    SQLALCHEMY_DATABASE_URI = url
+    try:
+        url = os.getenv("DATABASE_URL", 'sqlite:///' + os.path.join(basedir, 'app.db'))
+        if not url:
+            raise ValueError("DATABASE_URL environment variable is not set")
+            
+        url = url.replace("postgres://", "postgresql://")
+        if "?sslmode=" not in url and "postgresql://" in url:
+            url += "?sslmode=require"
+            
+        SQLALCHEMY_DATABASE_URI = url
+        logging.info(f"Database URL configured successfully: {url}")
+    except Exception as e:
+        logging.error(f"Error configuring database URL: {str(e)}")
+        raise
+    
+    # SQLAlchemy engine options for stable connections
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_size": 5,
+        "max_overflow": 10,
+        "pool_timeout": 30
+    }
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     

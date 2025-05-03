@@ -5,6 +5,7 @@ from flask_mail import Mail
 from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect
 from config import Config, DevelopmentConfig, ProductionConfig
+import logging
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -19,7 +20,10 @@ def create_app(config_class=Config):
     # Load configuration
     app.config.from_object(config_class)
     config_class.init_app(app)
-
+    
+    # Ensure SQLAlchemy configuration is set
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
@@ -52,8 +56,8 @@ def create_app(config_class=Config):
         try:
             from app.models.assessment import Question
             total_questions = Question.query.count()
-            print(f"\nDatabase initialized with {total_questions} questions")
+            logging.info(f"Database initialized with {total_questions} questions")
         except Exception as e:
-            print(f"Error verifying database: {str(e)}")
+            logging.error(f"Error verifying database: {str(e)}")
     
     return app
