@@ -1,0 +1,18 @@
+{% macro render_flash_messages() %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="fixed top-4 right-4 z-50 space-y-2">
+                {% for category, message in messages %}
+                    <div class="px-4 py-3 rounded-lg shadow-lg {% if category == 'error' %}bg-red-500{% elif category == 'success' %}bg-green-500{% elif category == 'warning' %}bg-yellow-500{% else %}bg-blue-500{% endif %} text-white">
+                        <div class="flex items-center">
+                            <span class="material-icons mr-2">
+                                {% if category == 'error' %}error{% elif category == 'success' %}check_circle{% elif category == 'warning' %}warning{% else %}info{% endif %}
+                            </span>
+                            <span>{{ message }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+{% endmacro %} 
