@@ -27,6 +27,11 @@ def create_app(config_class=Config):
     mail.init_app(app)
     csrf.init_app(app)
 
+    # Ensure proper session cleanup
+    @app.teardown_appcontext
+    def shutdown_session(exception=None):
+        db.session.remove()
+
     with app.app_context():
         # Import blueprints
         from app.routes.auth import bp as auth_bp

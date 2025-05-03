@@ -5,7 +5,7 @@ from app import db, login_manager
 
 @login_manager.user_loader
 def load_user(id):
-    return User.query.get(int(id))
+    return db.session.get(User, int(id))
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
