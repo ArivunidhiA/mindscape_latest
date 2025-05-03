@@ -1,9 +1,9 @@
 from app import create_app
 import os
-from config import config
+from config import DevelopmentConfig, ProductionConfig
 
 # Create app with development config by default
-app = create_app(config['development'])
+app = create_app(DevelopmentConfig)
 
 if __name__ == '__main__':
     # Use localhost and port 5000 by default for local development

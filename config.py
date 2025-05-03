@@ -17,7 +17,7 @@ class Config:
     PREFERRED_URL_SCHEME = 'https'  # Required for production
     
     # Database settings
-    url = os.getenv("DATABASE_URL", 'sqlite:///' + os.path.join(basedir, 'app.db'))
+    url = os.environ.get("DATABASE_URL", 'sqlite:///' + os.path.join(basedir, 'app.db'))
     url = url.replace("postgres://", "postgresql://")
     if "sslmode" not in url and "postgresql://" in url:
         url += "?sslmode=require"
