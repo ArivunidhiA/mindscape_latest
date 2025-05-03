@@ -1,11 +1,12 @@
 {% extends "base.html" %}
+{% from "macros.html" import render_flash_messages %}
 
 {% block title %}Assessment History - Mindscape{% endblock %}
 
 {% block content %}
 <div class="min-h-screen py-12 bg-gray-900">
     <div class="container mx-auto px-6">
-        <div class="max-w-4xl mx-auto">
+        <div class="max-w-6xl mx-auto">
             <h1 class="text-4xl font-bold mb-8">
                 <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
                     Your Assessment History
@@ -13,17 +14,18 @@
             </h1>
 
             {% if assessments %}
-                <div class="space-y-6">
+                <div class="space-y-8">
                     {% for assessment in assessments %}
                     <div class="glass-card p-6 rounded-lg shadow-xl bg-gray-800 bg-opacity-50">
-                        <div class="flex justify-between items-start mb-4">
+                        <div class="flex justify-between items-start mb-6">
                             <div>
                                 <h3 class="text-xl font-semibold text-white">
                                     {{ assessment_types[assessment.assessment_type]['name'] }}
                                 </h3>
-                                <p class="text-sm text-gray-400">
-                                    Completed on {{ assessment.completed_at.strftime('%B %d, %Y at %I:%M %p') }}
-                                </p>
+                                <div class="flex items-center gap-2 text-sm text-gray-400">
+                                    <span class="material-icons text-sm">schedule</span>
+                                    <span>{{ assessment.completed_at.strftime('%B %d at %I:%M %p') }}</span>
+                                </div>
                             </div>
                             <a href="{{ url_for('assessment.results', assessment_id=assessment.id) }}" 
                                class="btn-primary bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-4 py-2 rounded-lg text-sm transition-colors duration-200">
@@ -31,40 +33,21 @@
                             </a>
                         </div>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {% set ei_score = assessment.get_category_score('emotional_intelligence') %}
-                            {% set ls_score = assessment.get_category_score('leadership') %}
-                            {% set pg_score = assessment.get_category_score('personal_growth') %}
-                            
-                            <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-                                <h4 class="font-semibold mb-2 text-gray-300">Emotional Intelligence</h4>
+                        {% set scores = assessment.get_all_category_scores() %}
+                        {% set categories = assessment_types[assessment.assessment_type]['categories'] %}
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {% for category in categories %}
+                            <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700 hover:border-purple-500 transition-colors duration-200">
+                                <h4 class="font-semibold mb-2 text-gray-300">{{ category|replace('_', ' ')|title }}</h4>
                                 <div class="flex items-end gap-1">
                                     <div class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
-                                        {{ "%.1f"|format(ei_score) }}
+                                        {{ "%.1f"|format(scores[category]) }}
                                     </div>
-                                    <div class="text-sm text-gray-500 mb-1">/5.0</div>
+                                    <div class="text-sm text-gray-500 mb-1">/{{ assessment_types[assessment.assessment_type]['max_score'] }}.0</div>
                                 </div>
                             </div>
-                            
-                            <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-                                <h4 class="font-semibold mb-2 text-gray-300">Leadership Skills</h4>
-                                <div class="flex items-end gap-1">
-                                    <div class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
-                                        {{ "%.1f"|format(ls_score) }}
-                                    </div>
-                                    <div class="text-sm text-gray-500 mb-1">/5.0</div>
-                                </div>
-                            </div>
-                            
-                            <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-                                <h4 class="font-semibold mb-2 text-gray-300">Personal Growth</h4>
-                                <div class="flex items-end gap-1">
-                                    <div class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
-                                        {{ "%.1f"|format(pg_score) }}
-                                    </div>
-                                    <div class="text-sm text-gray-500 mb-1">/5.0</div>
-                                </div>
-                            </div>
+                            {% endfor %}
                         </div>
                     </div>
                     {% endfor %}

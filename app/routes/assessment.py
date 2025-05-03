@@ -11,6 +11,7 @@ from threading import Thread
 import json
 from flask import current_app
 import logging
+from pytz import timezone
 
 bp = Blueprint('assessment', __name__)
 
@@ -246,6 +247,13 @@ def history():
     assessments = Assessment.query.filter_by(
         user_id=current_user.id
     ).order_by(Assessment.completed_at.desc()).all()
+    
+    # Convert UTC times to Eastern Time (EST/EDT)
+    local_tz = timezone('America/New_York')
+    for assessment in assessments:
+        if assessment.completed_at.tzinfo is None:
+            assessment.completed_at = timezone('UTC').localize(assessment.completed_at)
+        assessment.completed_at = assessment.completed_at.astimezone(local_tz)
     
     return render_template('assessment/history.html', 
                          assessments=assessments,
