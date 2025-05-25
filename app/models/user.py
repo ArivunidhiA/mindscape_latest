@@ -17,18 +17,18 @@ def load_user(id):
         return None
 
 class User(UserMixin, db.Model):
+    """User model."""
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128))
-    name = db.Column(db.String(64))
-    age = db.Column(db.Integer)
+    name = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
     is_admin = db.Column(db.Boolean, default=False)
     
     # Relationships
-    assessments = db.relationship('Assessment', backref='user', lazy='dynamic')
+    assessments = db.relationship('Assessment', backref='user', lazy=True)
+    results = db.relationship('AssessmentResult', backref='user', lazy=True)
     
     def __repr__(self):
         return f'<User {self.username}>'

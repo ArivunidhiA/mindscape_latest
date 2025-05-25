@@ -28,17 +28,22 @@ class Config:
             
         SQLALCHEMY_DATABASE_URI = url
         logging.info(f"Database URL configured successfully: {url}")
+        
+        # SQLAlchemy engine options for stable connections
+        if "postgresql://" in url:
+            SQLALCHEMY_ENGINE_OPTIONS = {
+                "pool_pre_ping": True,
+                "pool_size": 5,
+                "max_overflow": 10,
+                "pool_timeout": 30
+            }
+        else:
+            SQLALCHEMY_ENGINE_OPTIONS = {
+                "pool_pre_ping": True
+            }
     except Exception as e:
         logging.error(f"Error configuring database URL: {str(e)}")
         raise
-    
-    # SQLAlchemy engine options for stable connections
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        "pool_pre_ping": True,
-        "pool_size": 5,
-        "max_overflow": 10,
-        "pool_timeout": 30
-    }
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     

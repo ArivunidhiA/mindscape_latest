@@ -22,22 +22,21 @@ def login():
 
 @bp.route('/register', methods=['GET', 'POST'])
 def register():
+    """Register a new user."""
     if current_user.is_authenticated:
-        return redirect(url_for('assessment.take_assessment'))
+        return redirect(url_for('main.index'))
     form = RegistrationForm()
     if form.validate_on_submit():
         user = User(
-            username=form.username.data,
             email=form.email.data,
-            name=form.name.data,
-            age=form.age.data
+            name=form.name.data
         )
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
-        flash('Registration successful! Please log in.', 'success')
+        flash('Congratulations, you are now registered!', 'success')
         return redirect(url_for('auth.login'))
-    return render_template('auth/register.html', form=form)
+    return render_template('auth/register.html', title='Register', form=form)
 
 @bp.route('/logout')
 @login_required
